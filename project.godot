@@ -1,0 +1,19 @@
+; Engine configuration file.
+; Godot 4.3+ ile açılmak üzere hazırlanmıştır.
+
+config_version=5
+
+[application]
+
+config/name="Evrim"
+run/main_scene="res://scenes/Main.tscn"
+config/features=PackedStringArray("4.3", "GL Compatibility")
+
+[autoload]
+
+OrganismTypes="*res://scripts/organism_types.gd"
+GameManager="*res://scripts/game_manager.gd"
+
+[physics]
+
+2d/default_gravity=980.0

@@ -1,0 +1,24 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/organism.gd" id="1_organism"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_default"]
+radius = 16.0
+
+[node name="Organism" type="RigidBody2D"]
+contact_monitor = true
+max_contacts_reported = 4
+gravity_scale = 1.0
+script = ExtResource("1_organism")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_default")
+
+[node name="Label" type="Label" parent="."]
+offset_left = -24.0
+offset_top = -10.0
+offset_right = 24.0
+offset_bottom = 10.0
+text = "?"
+horizontal_alignment = 1
+vertical_alignment = 1
