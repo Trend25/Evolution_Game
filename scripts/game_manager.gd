@@ -13,6 +13,7 @@ signal lives_changed(new_lives: int)          # UI/UX rolü: LivesUI (3 kalp gö
 signal life_lost(lives_remaining: int)        # UI/UX rolü: "Can Kaybı" uyarı animasyonu/sesi için
 signal game_over                              # UC-03 Adım 3: can bitince yayınlanır
 signal game_over_ready(final_stats: Dictionary)  # UI/UX rolü: "Oyun Bitti" ekranı için
+signal run_reset                              # Main.gd: yeni tur başında fanusun temizlenmesi için
 
 var score: int = 0
 var xp: int = 0
@@ -55,8 +56,9 @@ func _on_game_over() -> void:
 	LeaderboardService.submit_score(score)  # UC-04 Adım 3 / UC-07
 	game_over_ready.emit(final_stats)
 
-## Skor, XP ve canları başlangıç değerlerine sıfırlar; oyunu duraklatmadan
-## çıkarır (yeni oyun turu başlangıcı için).
+## Skor, XP ve canları başlangıç değerlerine sıfırlar, oyunu duraklatmadan
+## çıkarır ve run_reset sinyaliyle fanusun temizlenmesini tetikler (Tester
+## bulgusu: "Tekrar Oyna" önceden fanustaki eski canlıları temizlemiyordu).
 func reset_run() -> void:
 	score = 0
 	xp = 0
@@ -65,3 +67,4 @@ func reset_run() -> void:
 	score_changed.emit(score)
 	xp_changed.emit(xp)
 	lives_changed.emit(lives)
+	run_reset.emit()

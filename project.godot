@@ -15,6 +15,14 @@ OrganismTypes="*res://scripts/organism_types.gd"
 LeaderboardService="*res://scripts/leaderboard_service.gd"
 GameManager="*res://scripts/game_manager.gd"
 
+[display]
+
+window/size/viewport_width=720
+window/size/viewport_height=1280
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
+window/handheld/orientation="portrait"
+
 [physics]
 
 2d/default_gravity=980.0

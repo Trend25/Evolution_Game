@@ -13,8 +13,14 @@ class_name Main
 
 func _ready() -> void:
 	GameManager.life_lost.connect(_on_life_lost)
+	GameManager.run_reset.connect(_clear_organism_container)
 
 ## UC-03 Adım 2: Can kaybında fanustaki tüm canlıları kaldırır.
 func _on_life_lost(_lives_remaining: int) -> void:
+	_clear_organism_container()
+
+## Fanustaki tüm canlıları kaldırır. Hem UC-03 (can kaybı) hem de
+## GameManager.run_reset ("Tekrar Oyna") tarafından tetiklenir.
+func _clear_organism_container() -> void:
 	for organism in organism_container.get_children():
 		organism.queue_free()
