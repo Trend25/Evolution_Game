@@ -23,13 +23,20 @@ func _arm_merge() -> void:
 	_merge_armed = true
 
 ## stage_id'ye göre çarpışma yarıçapını, evrim grubunu ve (varsa) yer tutucu etiketi ayarlar.
+## NOT (bugfix): Organism.tscn'deki CircleShape2D, resource_local_to_scene
+## işaretlenmemiş bir sub-resource olduğundan tüm Organism instance'ları
+## arasında PAYLAŞILIR. Bu yüzden mevcut shape'in radius'unu mutate etmek
+## yerine her instance için ayrı bir CircleShape2D oluşturulur; aksi halde
+## bir organizmanın boyutu tüm diğer organizmaları da etkiler.
 func _apply_stage(new_stage_id: int) -> void:
 	stage_id = new_stage_id
 	var stage: Dictionary = OrganismTypes.get_stage(stage_id)
 	if stage.is_empty():
 		return
-	if collision_shape and collision_shape.shape is CircleShape2D:
-		(collision_shape.shape as CircleShape2D).radius = stage.get("radius", 16.0)
+	if collision_shape:
+		var instance_shape := CircleShape2D.new()
+		instance_shape.radius = stage.get("radius", 16.0)
+		collision_shape.shape = instance_shape
 	for existing_group in get_groups():
 		if String(existing_group).begins_with("organism_stage_"):
 			remove_from_group(existing_group)
