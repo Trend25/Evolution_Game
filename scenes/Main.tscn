@@ -1,6 +1,8 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=8 format=3]
 
-[ext_resource type="Script" path="res://scripts/spawner.gd" id="1_spawner"]
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="Script" path="res://scripts/spawner.gd" id="2_spawner"]
+[ext_resource type="Script" path="res://scripts/game_over_zone.gd" id="3_gameoverzone"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_left"]
 size = Vector2(20, 1280)
@@ -11,7 +13,11 @@ size = Vector2(20, 1280)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
 size = Vector2(720, 20)
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_gameover"]
+size = Vector2(640, 40)
+
 [node name="Main" type="Node2D"]
+script = ExtResource("1_main")
 
 [node name="Environment" type="Node2D" parent="."]
 
@@ -33,9 +39,16 @@ position = Vector2(360, 1270)
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Environment/Floor"]
 shape = SubResource("RectangleShape2D_floor")
 
+[node name="GameOverZone" type="Area2D" parent="Environment"]
+position = Vector2(360, 200)
+script = ExtResource("3_gameoverzone")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Environment/GameOverZone"]
+shape = SubResource("RectangleShape2D_gameover")
+
 [node name="Spawner" type="Node2D" parent="."]
 position = Vector2(360, 100)
-script = ExtResource("1_spawner")
+script = ExtResource("2_spawner")
 left_bound_x = 30.0
 right_bound_x = 690.0
 
