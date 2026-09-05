@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/spawner.gd" id="2_spawner"]
@@ -6,6 +6,8 @@
 [ext_resource type="Script" path="res://scripts/lives_ui.gd" id="4_livesui"]
 [ext_resource type="Script" path="res://scripts/score_label.gd" id="5_scorelabel"]
 [ext_resource type="PackedScene" path="res://scenes/GameOverScreen.tscn" id="6_gameoverscreen"]
+[ext_resource type="Script" path="res://scripts/xp_bar.gd" id="7_xpbar"]
+[ext_resource type="PackedScene" path="res://scenes/LevelUpToast.tscn" id="8_levelup"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_left"]
 size = Vector2(20, 1280)
@@ -74,3 +76,9 @@ text = "Skor: 0"
 script = ExtResource("5_scorelabel")
 
 [node name="GameOverScreen" parent="." instance=ExtResource("6_gameoverscreen")]
+
+[node name="XPBar" type="Node2D" parent="."]
+position = Vector2(40, 70)
+script = ExtResource("7_xpbar")
+
+[node name="LevelUpToast" parent="." instance=ExtResource("8_levelup")]
