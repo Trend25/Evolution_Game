@@ -12,6 +12,7 @@ config/features=PackedStringArray("4.3", "GL Compatibility")
 [autoload]
 
 OrganismTypes="*res://scripts/organism_types.gd"
+LeaderboardService="*res://scripts/leaderboard_service.gd"
 GameManager="*res://scripts/game_manager.gd"
 
 [physics]
