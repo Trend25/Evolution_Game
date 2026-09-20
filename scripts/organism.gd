@@ -7,6 +7,16 @@ const MERGE_ARM_DELAY: float = 0.15  # UC-02: Instantiate anındaki iç içe ge�
 
 @export var stage_id: int = 0
 
+# Görsel katman (organism_visual.gd) ile veri sözleşmesi: bu dört alan şu an
+# hiçbir yerde set edilmiyor (varsayılan değerde kalıyor) — organism_visual.gd
+# bunları organism.get(...) ile güvenli okuyabilsin diye buradalar. Gerçek
+# davranış (tier büyümesi, bonus zamanlayıcısı, balık parça birleşimi) ayrı,
+# izole commit'lerde eklenir.
+@export var is_bonus: bool = false  # Bonus Sistemi: Spawner'ın zaman zaman işaretlediği özel, yüksek puanlı canlı
+@export var tier: int = 0  # Solucan büyüme mekaniği: tier>0 ise fiziksel/görsel boyut büyür (bkz. OrganismTypes.tier_size_multiplier)
+@export var is_fish_part: bool = false  # Balık'ın iki parçadan biri mi (bkz. spawner.gd, _perform_fish_part_merge)
+@export var fish_part_index: int = 0  # 0 veya 1 — tamamlayıcı parça diğeriyle eşleşir
+
 var _merge_armed: bool = false
 var _is_merging: bool = false
 
