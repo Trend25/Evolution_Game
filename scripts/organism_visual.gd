@@ -164,13 +164,16 @@ const FISH_STAGE_ID: int = 3
 const FISH_CUT_TEETH_COUNT: int = 3
 const FISH_CUT_DEPTH_RATIO: float = 0.11
 
-# Cowork uygulama talimati (CLAUDE_COWORK_PROMPT_TR.md, scenes/organism_assets.json
-# ile birebir): sanatcidan gercek cizim gelen asamalar icin prosedurel
-# Polygon2D yerine merkezlenmis bir Sprite2D kullanilir (bkz. _build_sprite_visual).
-# Henuz sanati gelmemis asamalar (5-9) ve Balik'in PARCALARI (is_fish_part)
-# bu sozlukte YOK ve mevcut prosedurel cizimle devam eder -- sadece TAMAMLANMIS
-# Balik (stage_id 3, is_fish_part=false) sprite kullanir. Dosya yukleme her
-# zaman preload() ile (parse zamaninda, sabit) yapilir; _ready() icinde asla
+# Cowork uygulama talimati (Faz 2 -- CLAUDE_COWORK_PROMPT_TR.md, README_TR.md,
+# evrim-godot-assets-stage-00-07.zip/organism_assets.json ile birebir):
+# sanatcidan gercek cizim gelen asamalar icin prosedurel Polygon2D yerine
+# merkezlenmis bir Sprite2D kullanilir (bkz. _build_sprite_visual /
+# _add_scaled_sprite). Henuz sanati gelmemis asamalar (8-9, Memeli/Dinozor)
+# bu sozlukte YOK ve mevcut prosedurel cizimle (asagidaki `match body_type`
+# dali) devam eder -- eksik dosya nedeniyle hicbir hata olusmaz. Balik'in
+# PARCALARI (is_fish_part) bu sozlukte degil, ayri FISH_FRONT_TEXTURE/
+# FISH_BACK_TEXTURE sabitlerinden gelir (asagida). Dosya yukleme her zaman
+# preload() ile (parse zamaninda, sabit) yapilir; _ready() icinde asla
 # load() cagrilmaz.
 const STAGE_TEXTURES: Dictionary = {
 	0: preload("res://assets/organisms/stage_00_cell.png"),
@@ -178,7 +181,17 @@ const STAGE_TEXTURES: Dictionary = {
 	2: preload("res://assets/organisms/stage_02_worm.png"),
 	3: preload("res://assets/organisms/stage_03_fish_complete.png"),
 	4: preload("res://assets/organisms/stage_04_frog.png"),
+	5: preload("res://assets/organisms/stage_05_lizard.png"),
+	6: preload("res://assets/organisms/stage_06_snake.png"),
+	7: preload("res://assets/organisms/stage_07_bird.png"),
 }
+
+# Balik'in AYRI ON/ARKA parca gorselleri (README_TR.md "Kritik balik notu"):
+# ucu gorsel de (on/arka/tam) AYNI 192x112 tuval ve merkez pivotu paylasir,
+# bu yuzden _add_scaled_sprite ile TAMAMLANMIS Balik ile birebir ayni
+# olcekleme mantigi kullanilir -- ayrica kirpma/yeniden-merkezleme YOK.
+const FISH_FRONT_TEXTURE: Texture2D = preload("res://assets/organisms/stage_03_fish_front.png")
+const FISH_BACK_TEXTURE: Texture2D = preload("res://assets/organisms/stage_03_fish_back.png")
 
 # Bonus Sistemi (editör notu — erişilebilirlik): renk değişimine (altın ton)
 # ek olarak, renk körü oyuncular da ayırt edebilsin diye gövdenin arkasında
@@ -344,8 +357,11 @@ func _ready() -> void:
 		base_color = base_color.lerp(BONUS_TINT_COLOR, BONUS_TINT_STRENGTH)
 
 	if is_fish_part:
+		# Faz 2: Balik'in PARCALARI da artik gercek sanat (on/arka PNG) kullanir --
+		# eski prosedurel _build_fish_part hala asagida duruyor (kullanilmiyor,
+		# geri donus/referans icin), fish_part_index 0=on (front), 1=arka (back).
 		var part_index: int = int(organism.get("fish_part_index"))
-		_build_fish_part(cfg, radius, base_color, part_index == 0)
+		_build_sprite_fish_part(part_index == 0, radius, is_bonus)
 	elif STAGE_TEXTURES.has(stage_id):
 		# Sadece TAMAMLANMIS Balik (ve sanati hazir diger asamalar) buraya duser --
 		# Balik'in PARCALARI yukaridaki is_fish_part dalinda zaten ele alindi.
@@ -407,7 +423,26 @@ func _ready() -> void:
 ## kalsin. Bonus tint ve nabiz atan halo (_add_bonus_halo, ustte zaten
 ## cagriliyor) PNG'ye bake edilmez -- modulate ile canli canli uygulanir.
 func _build_sprite_visual(stage_id: int, radius: float, is_bonus: bool) -> void:
-	var texture: Texture2D = STAGE_TEXTURES[stage_id]
+	_add_scaled_sprite(STAGE_TEXTURES[stage_id], radius, is_bonus)
+
+## Faz 2 -- Balik'in TEK bir parcasi (on veya arka) icin merkezlenmis Sprite2D
+## ekler; on/arka/tam gorseller ayni tuval+pivotu paylastigi icin
+## _add_scaled_sprite'a AYNEN _build_sprite_visual gibi delege eder (kirpma/
+## yeniden-merkezleme yok -- README_TR.md "Kritik balik notu" ile birebir).
+func _build_sprite_fish_part(is_front: bool, radius: float, is_bonus: bool) -> void:
+	var texture: Texture2D = FISH_FRONT_TEXTURE if is_front else FISH_BACK_TEXTURE
+	_add_scaled_sprite(texture, radius, is_bonus)
+
+## Cowork uygulama talimati ("Sprite olcegini merkezi bir yapidan yonet; her
+## karakter icin kod icine dagilmis rastgele scale degerleri yazma"): TUM
+## sprite tabanli asamalar (STAGE_TEXTURES + Balik on/arka parcalari) buraya
+## delege eder -- fit_scale hesabi (fizik yaricapi / dokunun GERCEK piksel
+## genisligi) TEK bir yerden yonetilir. Sprite'in ham piksel boyutunu ASLA
+## carpisma boyutu sanma -- collision (CircleShape2D, Coder'in ayarladigi)
+## hic degismez; sadece bu gorsel kok radius'a eslenir. Bonus tint ve nabiz
+## atan halo (_add_bonus_halo, cagiran _ready() icinde zaten cagriliyor)
+## PNG'ye bake edilmez -- modulate ile canli canli uygulanir.
+func _add_scaled_sprite(texture: Texture2D, radius: float, is_bonus: bool) -> Sprite2D:
 	var sprite := Sprite2D.new()
 	sprite.texture = texture
 	sprite.centered = true
@@ -418,6 +453,7 @@ func _build_sprite_visual(stage_id: int, radius: float, is_bonus: bool) -> void:
 	sprite.scale = Vector2(fit_scale, fit_scale)
 	sprite.modulate = Color.WHITE.lerp(BONUS_TINT_COLOR, BONUS_TINT_STRENGTH) if is_bonus else Color.WHITE
 	add_child(sprite)
+	return sprite
 
 ## "cell" gövdeleri için her karede kenarları hafifçe dalgalandırır — sabit
 ## dursaydı yarı saydam+çekirdekli görünüm bile cansız kalırdı; bu sürekli,
