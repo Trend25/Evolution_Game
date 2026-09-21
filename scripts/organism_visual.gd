@@ -168,13 +168,19 @@ const FISH_CUT_DEPTH_RATIO: float = 0.11
 # evrim-godot-assets-stage-00-07.zip/organism_assets.json ile birebir):
 # sanatcidan gercek cizim gelen asamalar icin prosedurel Polygon2D yerine
 # merkezlenmis bir Sprite2D kullanilir (bkz. _build_sprite_visual /
-# _add_scaled_sprite). Henuz sanati gelmemis asamalar (8-9, Memeli/Dinozor)
-# bu sozlukte YOK ve mevcut prosedurel cizimle (asagidaki `match body_type`
-# dali) devam eder -- eksik dosya nedeniyle hicbir hata olusmaz. Balik'in
-# PARCALARI (is_fish_part) bu sozlukte degil, ayri FISH_FRONT_TEXTURE/
-# FISH_BACK_TEXTURE sabitlerinden gelir (asagida). Dosya yukleme her zaman
-# preload() ile (parse zamaninda, sabit) yapilir; _ready() icinde asla
-# load() cagrilmaz.
+# _add_scaled_sprite). Balik'in PARCALARI (is_fish_part) bu sozlukte degil,
+# ayri FISH_FRONT_TEXTURE/FISH_BACK_TEXTURE sabitlerinden gelir (asagida).
+# Dosya yukleme her zaman preload() ile (parse zamaninda, sabit) yapilir;
+# _ready() icinde asla load() cagrilmaz.
+#
+# art/stage-08-09: Memeli (8) ve T-Rex (9) sanati geldi (bkz.
+# evrim-godot-assets-stage-00-09.zip/organism_assets.json) -- sozluge
+# EKLENDI, stage_id 8/9 artik bu blok araciligiyla gercek PNG kullaniyor.
+# Prosedürel "critter" cizimi (asagidaki `match body_type` dali,
+# STAGE_SHAPES[8]/[9]) BILEREK SILINMEDI -- bir stage_id bu sozlukten
+# cikarilirsa (ör. sanat regresyonu/geri alma) otomatik olarak o prosedürel
+# cizime geri döner, hicbir kod degisikligi gerekmez. Stage 0-7 satirlari
+# ve collision/merge/skor/spawn mantigi bu commit'te DOKUNULMADI.
 const STAGE_TEXTURES: Dictionary = {
 	0: preload("res://assets/organisms/stage_00_cell.png"),
 	1: preload("res://assets/organisms/stage_01_amoeba.png"),
@@ -184,6 +190,8 @@ const STAGE_TEXTURES: Dictionary = {
 	5: preload("res://assets/organisms/stage_05_lizard.png"),
 	6: preload("res://assets/organisms/stage_06_snake.png"),
 	7: preload("res://assets/organisms/stage_07_bird.png"),
+	8: preload("res://assets/organisms/stage_08_mammal.png"),
+	9: preload("res://assets/organisms/stage_09_trex.png"),
 }
 
 # Balik'in AYRI ON/ARKA parca gorselleri (README_TR.md "Kritik balik notu"):
