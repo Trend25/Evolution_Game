@@ -71,10 +71,48 @@ func _on_body_entered(body: Node) -> void:
 	var other: Organism = body as Organism
 	if other.stage_id != stage_id or other._is_merging or not other._merge_armed:
 		return
+	# Balık 2-parça mekaniği: parçalar normal evrim birleşmesine katılmaz.
+	# Sadece tamamlayıcı parça (farklı fish_part_index) ile karşılaşınca tek
+	# bir tam Balık'a dönüşürler; parça+parça (aynı index) veya parça+gerçek
+	# Balık (is_fish_part=false) hiç birleşmez.
+	if is_fish_part or other.is_fish_part:
+		if is_fish_part and other.is_fish_part and fish_part_index != other.fish_part_index:
+			if get_instance_id() < other.get_instance_id():
+				_perform_fish_part_merge(other)
+		return
 	# Çift taraflı tetiklenmeyi (her iki obje de aynı çarpışmayı algılar) önlemek için
 	# sadece daha düşük instance ID'ye sahip taraf merge işlemini başlatır.
 	if get_instance_id() < other.get_instance_id():
 		_perform_merge(other)
+
+## Balık 2-parça mekaniği: iki TAMAMLAYICI Balık Parçası (index 0 + 1)
+## birbirine değince normal evrim biriminin aksine bir üst aşamaya ATLAMAZ —
+## sadece kendi aşamalarını (Balık) TAMAMLARLAR. Mevcut oyun ekonomisi
+## kontrol edildi: committed add_merge_reward SADECE _perform_merge'den
+## (gerçek stage-to-stage evrim/büyüme) çağrılıyor; parça tamamlama farklı
+## bir kategori (aynı aşamanın iki yarısını birleştirme, evrim değil) ve
+## bunun için mevcut ekonomide açık bir kural yok. Bu yüzden burada YENİ bir
+## ödül EKLENMEDİ — tasarım kararı açık olmadığından skor/XP verilmiyor
+## (bkz. commit mesajı ve final rapor).
+func _perform_fish_part_merge(other: Organism) -> void:
+	_is_merging = true
+	other._is_merging = true
+
+	var contact_point: Vector2 = (global_position + other.global_position) / 2.0
+	var container: Node = get_tree().get_first_node_in_group("organism_container")
+	var combined_is_bonus: bool = is_bonus or other.is_bonus  # Bonus Sistemi: iki taraftan biri yeterli
+
+	queue_free()
+	other.queue_free()
+
+	if container == null:
+		return
+
+	var completed: Organism = load("res://scenes/Organism.tscn").instantiate()
+	completed.stage_id = stage_id  # Balık — parçalar zaten bu id'yi taşıyordu, sadece tamamlanıyor
+	completed.is_bonus = combined_is_bonus
+	container.add_child(completed)
+	completed.global_position = contact_point
 
 ## UC-02 Adım 2-3: İki eski canlıyı kaldırır (queue_free), bir üst aşamayı temas
 ## noktasında instantiate eder, skor/XP ödülünü ve merge bildirimini GameManager

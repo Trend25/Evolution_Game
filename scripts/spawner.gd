@@ -14,6 +14,12 @@ const ORGANISM_SCENE: PackedScene = preload("res://scenes/Organism.tscn")
 const BONUS_INTERVAL_MIN_SECONDS: float = 9.0
 const BONUS_INTERVAL_MAX_SECONDS: float = 15.0
 
+# Balık 2-parça mekaniği (kullanıcı isteği — "balık 2 parçadan oluşur, her
+# parça ayrı ayrı gelir, fanusta birleştirilir"): Spawner Balık aşamasını
+# üretmek istediğinde tek bir tam Balık yerine arka arkaya İKİ "Balık
+# Parçası" düşürür (bkz. organism.gd is_fish_part/fish_part_index).
+const FISH_STAGE_ID: int = 3  # OrganismTypes.STAGES[3] = Balık
+
 @export var left_bound_x: float = 0.0
 @export var right_bound_x: float = 720.0
 
@@ -23,6 +29,7 @@ var _pending_organism: Organism = null
 var _bonus_elapsed_seconds: float = 0.0
 var _next_bonus_threshold_seconds: float = randf_range(BONUS_INTERVAL_MIN_SECONDS, BONUS_INTERVAL_MAX_SECONDS)
 var _bonus_flag_ready: bool = false
+var _force_next_fish_part_index: int = -1  # -1 = bekleyen zorunlu eşleşme yok
 
 func _ready() -> void:
 	_prepare_next_organism()
@@ -88,10 +95,32 @@ func _drop_current_organism() -> void:
 
 ## UC-01: Bir sonraki bırakılacak canlıyı rastgele seçer ve Spawner'ın altında
 ## dondurulmuş (freeze) halde, ekranda "sıradaki canlı" olarak bekletir.
+## Balık 2-parça mekaniği: eğer az önce Balık'ın 1. parçasını hazırladıysak
+## (bkz. _force_next_fish_part_index), bu çağrı ZORUNLU olarak 2. parçayı
+## üretir (rastgele seçime bırakılmaz) — böylece iki parça her zaman art
+## arda gelir. Aksi halde normal rastgele aşama seçilir; seçilen aşama Balık
+## ise bu spawn 1. parça olur ve bir sonraki çağrı için 2. parça zorlanır.
 func _prepare_next_organism() -> void:
-	var stage_id: int = OrganismTypes.get_random_spawnable_stage_id()
+	var stage_id: int
+	var is_fish_part: bool = false
+	var fish_part_index: int = 0
+
+	if _force_next_fish_part_index >= 0:
+		stage_id = FISH_STAGE_ID
+		is_fish_part = true
+		fish_part_index = _force_next_fish_part_index
+		_force_next_fish_part_index = -1
+	else:
+		stage_id = OrganismTypes.get_random_spawnable_stage_id()
+		if stage_id == FISH_STAGE_ID:
+			is_fish_part = true
+			fish_part_index = 0
+			_force_next_fish_part_index = 1
+
 	_pending_organism = ORGANISM_SCENE.instantiate()
 	_pending_organism.stage_id = stage_id
+	_pending_organism.is_fish_part = is_fish_part
+	_pending_organism.fish_part_index = fish_part_index
 	_pending_organism.freeze = true
 	_pending_organism.is_bonus = _bonus_flag_ready  # Bonus Sistemi: bekleyen bayrak varsa yeni canlıya uygula
 	_bonus_flag_ready = false
