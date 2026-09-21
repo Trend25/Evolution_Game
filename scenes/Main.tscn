@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/spawner.gd" id="2_spawner"]
@@ -9,6 +9,7 @@
 [ext_resource type="Script" path="res://scripts/xp_bar.gd" id="7_xpbar"]
 [ext_resource type="PackedScene" path="res://scenes/LevelUpToast.tscn" id="8_levelup"]
 [ext_resource type="Script" path="res://scripts/background_visual.gd" id="9_backgroundvisual"]
+[ext_resource type="Texture2D" path="res://assets/background/evolution_playfield_v3_720x1280.png" id="10_bgplayfieldv3"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_left"]
 size = Vector2(20, 1280)
@@ -26,10 +27,16 @@ size = Vector2(640, 40)
 script = ExtResource("1_main")
 
 [node name="Background" type="Polygon2D" parent="."]
+visible = false
 z_index = -10
 polygon = PackedVector2Array(0, 0, 720, 0, 720, 1280, 0, 1280)
 color = Color(0.055, 0.11, 0.098, 1)
 script = ExtResource("9_backgroundvisual")
+
+[node name="BackgroundImage" type="Sprite2D" parent="."]
+z_index = -10
+position = Vector2(360, 640)
+texture = ExtResource("10_bgplayfieldv3")
 
 [node name="Environment" type="Node2D" parent="."]
 
