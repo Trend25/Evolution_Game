@@ -89,8 +89,9 @@ func _perform_merge(other: Organism) -> void:
 	# Solucan büyüme mekaniği: iki tier-0 Solucan birleşince üst aşamaya
 	# ATLAMAZ, sadece daha büyük (tier 1) aynı-aşama bir canlı olur.
 	var grow_instead_of_evolve: bool = _should_grow_instead_of_evolve(other)
+	var combined_is_bonus: bool = is_bonus or other.is_bonus  # Bonus Sistemi: iki taraftan biri yeterli
 
-	GameManager.add_merge_reward(merged_stage_id, contact_point)
+	GameManager.add_merge_reward(merged_stage_id, contact_point, combined_is_bonus)
 
 	queue_free()
 	other.queue_free()

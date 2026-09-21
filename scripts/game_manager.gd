@@ -7,6 +7,11 @@ extends Node
 const MAX_LIVES: int = 3        # 3.1 Can Sistemi: Oyuncu her turda 3 can ile başlar
 const LEVEL_XP_BASE: int = 100  # UC-05 / 3.2: Seviye n → n+1 eşiği ≈ n × LEVEL_XP_BASE
 
+# Bonus Sistemi (kullanıcı isteği): Spawner'ın zaman zaman ürettiği özel
+# "bonus" canlı ile birleşince skor bu kat artar (bkz. organism.gd is_bonus,
+# spawner.gd bonus zamanlayıcısı). XP'ye dokunmaz, sadece skora uygulanır.
+const BONUS_ORGANISM_SCORE_MULTIPLIER: float = 4.0
+
 signal score_changed(new_score: int)
 signal xp_changed(new_xp: int)
 signal organism_merged(position: Vector2, merged_stage_id: int)  # UI/UX rolü: Tween/ses/parçacık tetikleyicisi için
@@ -27,12 +32,18 @@ var unlocked_rewards: Array[String] = []  # UC-05 Adım 3: açılan kozmetik öd
 func _ready() -> void:
 	game_over.connect(_on_game_over)
 
-## UC-02 Adım 3: Merge sonucu kazanılan skor ve XP'yi ekler, ilgili sinyalleri yayınlar.
-func add_merge_reward(stage_id: int, merge_position: Vector2) -> void:
+## UC-02 Adım 3: Merge sonucu kazanılan skor ve XP'yi ekler, ilgili sinyalleri
+## yayınlar. Bonus Sistemi: is_bonus true ise (Spawner'ın ürettiği özel canlı
+## birleşmenin bir tarafıysa) skor BONUS_ORGANISM_SCORE_MULTIPLIER ile çarpılır.
+## Geriye uyumluluk: is_bonus parametresi varsayılan false — eski çağrı yeri
+## (varsa) davranışı değişmeden çalışır.
+func add_merge_reward(stage_id: int, merge_position: Vector2, is_bonus: bool = false) -> void:
 	var stage: Dictionary = OrganismTypes.get_stage(stage_id)
 	if stage.is_empty():
 		return
-	score += int(stage.get("score_value", 0))
+	var bonus_multiplier: float = BONUS_ORGANISM_SCORE_MULTIPLIER if is_bonus else 1.0
+	var awarded_score: int = int(round(int(stage.get("score_value", 0)) * bonus_multiplier))
+	score += awarded_score
 	xp += int(stage.get("xp_value", 0))
 	score_changed.emit(score)
 	xp_changed.emit(xp)

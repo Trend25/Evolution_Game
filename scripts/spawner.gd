@@ -8,20 +8,44 @@ const DROP_COOLDOWN_SECONDS: float = 1.0    # UC-01 Adım 3: Spam koruması
 const HORIZONTAL_MARGIN: float = 40.0       # Canlının fanus duvarlarına gömülmesini engelleyen kenar payı
 const ORGANISM_SCENE: PackedScene = preload("res://scenes/Organism.tscn")
 
+# Bonus Sistemi (kullanıcı isteği): belirli aralıklarla bir sonraki bırakılacak
+# canlı "bonus" olarak işaretlenir (bkz. Organism.is_bonus / GameManager
+# BONUS_ORGANISM_SCORE_MULTIPLIER). Sık gelmesi istendiği için aralık kısa tutuldu.
+const BONUS_INTERVAL_MIN_SECONDS: float = 9.0
+const BONUS_INTERVAL_MAX_SECONDS: float = 15.0
+
 @export var left_bound_x: float = 0.0
 @export var right_bound_x: float = 720.0
 
 var _is_dragging: bool = false
 var _cooldown_remaining: float = 0.0
 var _pending_organism: Organism = null
+var _bonus_elapsed_seconds: float = 0.0
+var _next_bonus_threshold_seconds: float = randf_range(BONUS_INTERVAL_MIN_SECONDS, BONUS_INTERVAL_MAX_SECONDS)
+var _bonus_flag_ready: bool = false
 
 func _ready() -> void:
 	_prepare_next_organism()
 
-## Cooldown süresini her karede azaltır.
+## Cooldown süresini her karede azaltır; Bonus Sistemi zamanlayıcısını ilerletir.
 func _process(delta: float) -> void:
 	if _cooldown_remaining > 0.0:
 		_cooldown_remaining = max(0.0, _cooldown_remaining - delta)
+	_advance_bonus_timer(delta)
+
+## Bonus Sistemi: Eşik süresi dolduğunda, halen bekleyen canlı varsa onu bonus
+## olarak işaretler; yoksa bir sonraki hazırlanan canlıya uygulanmak üzere
+## bayrağı kaldırır (bkz. _prepare_next_organism).
+func _advance_bonus_timer(delta: float) -> void:
+	_bonus_elapsed_seconds += delta
+	if _bonus_elapsed_seconds < _next_bonus_threshold_seconds:
+		return
+	_bonus_elapsed_seconds = 0.0
+	_next_bonus_threshold_seconds = randf_range(BONUS_INTERVAL_MIN_SECONDS, BONUS_INTERVAL_MAX_SECONDS)
+	if _pending_organism != null:
+		_pending_organism.is_bonus = true
+	else:
+		_bonus_flag_ready = true
 
 ## UC-01: Dokunma/tıklama ve sürükleme girdilerini yakalar (mobil dokunma + editör test için fare).
 func _unhandled_input(event: InputEvent) -> void:
@@ -69,5 +93,7 @@ func _prepare_next_organism() -> void:
 	_pending_organism = ORGANISM_SCENE.instantiate()
 	_pending_organism.stage_id = stage_id
 	_pending_organism.freeze = true
+	_pending_organism.is_bonus = _bonus_flag_ready  # Bonus Sistemi: bekleyen bayrak varsa yeni canlıya uygula
+	_bonus_flag_ready = false
 	add_child(_pending_organism)
 	_pending_organism.position = Vector2.ZERO
