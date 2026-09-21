@@ -17,6 +17,13 @@ const MERGE_ARM_DELAY: float = 0.15  # UC-02: Instantiate anındaki iç içe ge�
 @export var is_fish_part: bool = false  # Balık'ın iki parçadan biri mi (bkz. spawner.gd, _perform_fish_part_merge)
 @export var fish_part_index: int = 0  # 0 veya 1 — tamamlayıcı parça diğeriyle eşleşir
 
+# Görsel cila (visual-polish/stage-readability): isim etiketleri normal
+# oyunda kafa karıştırıcı/gereksiz olduğundan varsayılan olarak gizli.
+# QA/test script'leri, organizmayı sahneye eklemeden (add_child/_ready'den)
+# ÖNCE bu alanı true yaparak etiketi görünür kılabilir. Yeni bir autoload
+# veya project.godot değişikliği kasıtlı olarak eklenmedi.
+@export var show_debug_label: bool = false
+
 var _merge_armed: bool = false
 var _is_merging: bool = false
 
@@ -61,6 +68,7 @@ func _apply_stage(new_stage_id: int) -> void:
 		if tier > 0:
 			label_text = "%s (Büyük)" % label_text
 		_debug_label.text = label_text
+		_debug_label.visible = show_debug_label
 
 ## UC-02 Adım 1: Fizik motoru aynı seviyeden bir canlıyla temasını algıladığında çağrılır (body_entered).
 func _on_body_entered(body: Node) -> void:

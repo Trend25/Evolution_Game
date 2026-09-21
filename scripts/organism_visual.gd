@@ -193,13 +193,36 @@ const STAGE_TEXTURES: Dictionary = {
 const FISH_FRONT_TEXTURE: Texture2D = preload("res://assets/organisms/stage_03_fish_front.png")
 const FISH_BACK_TEXTURE: Texture2D = preload("res://assets/organisms/stage_03_fish_back.png")
 
+# Görsel cila (visual-polish/stage-readability): Stage 0-7 normal sprite
+# ölçeklemesi ÖNCEKİ (tuval genişliğine göre) haliyle korunuyor -- bkz.
+# _add_scaled_sprite. Yalnızca Balık ön/arka parçaları, okunabilirlik
+# şikayeti üzerine ("tek bakışta ayırt edilecek büyüklükte olsun"), bu
+# temel ölçeğin üzerine minimal bir `extra_scale` çarpanı alır (bkz.
+# _build_sprite_fish_part, FISH_PART_EXTRA_SCALE) -- ön ve arka AYNI
+# çarpanı kullanır (ikisinin tuvali aynı boyutta olduğundan kesim hattı
+# hizası bozulmaz), ~%64-66 görünür doluluk hedefiyle ölçüldü (bkz. rapor).
+# Tam Balık'ın (STAGE_TEXTURES[3]) ölçeği bu çarpandan ETKİLENMEZ.
+const FISH_PART_EXTRA_SCALE: float = 1.40
+
 # Bonus Sistemi (editör notu — erişilebilirlik): renk değişimine (altın ton)
 # ek olarak, renk körü oyuncular da ayırt edebilsin diye gövdenin arkasında
 # sürekli nabız atan yarı saydam bir hale/halka gösterilir.
-const BONUS_HALO_COLOR: Color = Color(1.0, 0.9, 0.4, 0.55)
-const BONUS_HALO_SCALE: float = 1.55
-const BONUS_HALO_PULSE_SCALE: float = 1.75
+# Görsel cila (visual-polish/stage-readability): eski düz/opak disk yerine,
+# gövdenin arkasında yumuşak, altın renkli bir "halka/glow" -- katmanlı,
+# gitgide saydamlaşan ince Line2D çemberler ile (bkz. GLOSS_LAYERS/
+# BLUSH_LAYERS ile aynı "gerçek radyal gradyan yerine üst üste katman"
+# tekniği). Merkez (gövdenin hemen dışı) kasıtlı olarak en soluk katmanı
+# taşır; bant ortasında en belirgin katman var -- düz bir dolgu değil,
+# gerçek bir "halka" hissi için.
+const BONUS_HALO_COLOR: Color = Color(1.0, 0.85, 0.35)
+const BONUS_HALO_BASE_SCALE: float = 1.22
+const BONUS_HALO_PULSE_SCALE: float = 1.30
 const BONUS_HALO_PULSE_DURATION: float = 0.9
+const BONUS_HALO_RING_LAYERS: Array[Dictionary] = [
+	{"scale": 1.05, "alpha": 0.09, "width_ratio": 0.09},
+	{"scale": 1.14, "alpha": 0.20, "width_ratio": 0.13},
+	{"scale": 1.22, "alpha": 0.10, "width_ratio": 0.10},
+]
 
 # Her aşama için siluet tarifi.
 # "blob" tipinde (artık kullanılmıyor, geriye dönük varsayılan): x_scale/
@@ -431,7 +454,7 @@ func _build_sprite_visual(stage_id: int, radius: float, is_bonus: bool) -> void:
 ## yeniden-merkezleme yok -- README_TR.md "Kritik balik notu" ile birebir).
 func _build_sprite_fish_part(is_front: bool, radius: float, is_bonus: bool) -> void:
 	var texture: Texture2D = FISH_FRONT_TEXTURE if is_front else FISH_BACK_TEXTURE
-	_add_scaled_sprite(texture, radius, is_bonus)
+	_add_scaled_sprite(texture, radius, is_bonus, FISH_PART_EXTRA_SCALE)
 
 ## Cowork uygulama talimati ("Sprite olcegini merkezi bir yapidan yonet; her
 ## karakter icin kod icine dagilmis rastgele scale degerleri yazma"): TUM
@@ -442,14 +465,14 @@ func _build_sprite_fish_part(is_front: bool, radius: float, is_bonus: bool) -> v
 ## hic degismez; sadece bu gorsel kok radius'a eslenir. Bonus tint ve nabiz
 ## atan halo (_add_bonus_halo, cagiran _ready() icinde zaten cagriliyor)
 ## PNG'ye bake edilmez -- modulate ile canli canli uygulanir.
-func _add_scaled_sprite(texture: Texture2D, radius: float, is_bonus: bool) -> Sprite2D:
+func _add_scaled_sprite(texture: Texture2D, radius: float, is_bonus: bool, extra_scale: float = 1.0) -> Sprite2D:
 	var sprite := Sprite2D.new()
 	sprite.texture = texture
 	sprite.centered = true
 	sprite.position = Vector2.ZERO
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	var tex_width: float = max(float(texture.get_width()), 1.0)
-	var fit_scale: float = (radius * 2.0) / tex_width
+	var fit_scale: float = (radius * 2.0) / tex_width * extra_scale
 	sprite.scale = Vector2(fit_scale, fit_scale)
 	sprite.modulate = Color.WHITE.lerp(BONUS_TINT_COLOR, BONUS_TINT_STRENGTH) if is_bonus else Color.WHITE
 	add_child(sprite)
@@ -921,17 +944,27 @@ func _build_fish_half_shape(cfg: Dictionary, radius: float, is_front: bool) -> P
 ## nabız gibi büyüyüp küçülen yarı saydam bir hale ekler; sadece altın renk
 ## tonuna güvenmeyen, ikinci ve bağımsız bir "bu canlı özel" ipucu sağlar.
 func _add_bonus_halo(radius: float) -> void:
-	var halo := Polygon2D.new()
-	halo.polygon = _circle_points(radius * BONUS_HALO_SCALE, 24)
-	halo.color = BONUS_HALO_COLOR
-	halo.z_index = -2
-	add_child(halo)
-	var pulse_scale: float = BONUS_HALO_PULSE_SCALE / BONUS_HALO_SCALE
+	var halo_root := Node2D.new()
+	halo_root.z_index = -2
+	add_child(halo_root)
+	for layer in BONUS_HALO_RING_LAYERS:
+		var ring := Line2D.new()
+		var pts: PackedVector2Array = _circle_points(radius * float(layer.get("scale", 1.0)), 32)
+		var closed_pts: PackedVector2Array = pts.duplicate()
+		closed_pts.append(pts[0])
+		ring.points = closed_pts
+		ring.width = max(radius * float(layer.get("width_ratio", 0.08)), 1.0)
+		ring.default_color = Color(BONUS_HALO_COLOR.r, BONUS_HALO_COLOR.g, BONUS_HALO_COLOR.b, float(layer.get("alpha", 0.1)))
+		ring.joint_mode = Line2D.LINE_JOINT_ROUND
+		ring.begin_cap_mode = Line2D.LINE_CAP_ROUND
+		ring.end_cap_mode = Line2D.LINE_CAP_ROUND
+		halo_root.add_child(ring)
+	var pulse_scale: float = BONUS_HALO_PULSE_SCALE / BONUS_HALO_BASE_SCALE
 	var tween: Tween = create_tween()
 	tween.set_loops()
 	tween.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	tween.tween_property(halo, "scale", Vector2(pulse_scale, pulse_scale), BONUS_HALO_PULSE_DURATION)
-	tween.tween_property(halo, "scale", Vector2.ONE, BONUS_HALO_PULSE_DURATION)
+	tween.tween_property(halo_root, "scale", Vector2(pulse_scale, pulse_scale), BONUS_HALO_PULSE_DURATION)
+	tween.tween_property(halo_root, "scale", Vector2.ONE, BONUS_HALO_PULSE_DURATION)
 
 ## Canlı belirdiğinde (bırakılan ya da evrimle oluşan) küçükten büyüyerek
 ## "patlar gibi" beliren kısa bir hareket katar. Sadece görseldir; çarpışma
