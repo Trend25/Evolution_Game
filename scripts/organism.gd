@@ -43,16 +43,24 @@ func _apply_stage(new_stage_id: int) -> void:
 	var stage: Dictionary = OrganismTypes.get_stage(stage_id)
 	if stage.is_empty():
 		return
+	# Solucan büyüme mekaniği: tier > 0 ise fiziksel çarpışma yarıçapı da
+	# görsel boyutla (organism_visual.gd) BİREBİR aynı oranda büyür — ikisi
+	# hep OrganismTypes'taki TEK bir çarpandan gelir, aksi halde büyük
+	# Solucan'ın gerçek gövdesiyle çarpışma alanı birbirinden sapar.
+	var effective_radius: float = stage.get("radius", 16.0) * OrganismTypes.tier_size_multiplier(stage_id, tier)
 	if collision_shape:
 		var instance_shape := CircleShape2D.new()
-		instance_shape.radius = stage.get("radius", 16.0)
+		instance_shape.radius = effective_radius
 		collision_shape.shape = instance_shape
 	for existing_group in get_groups():
 		if String(existing_group).begins_with("organism_stage_"):
 			remove_from_group(existing_group)
 	add_to_group("organism_stage_%d" % stage_id)
 	if _debug_label:
-		_debug_label.text = String(stage.get("name", "?"))
+		var label_text: String = String(stage.get("name", "?"))
+		if tier > 0:
+			label_text = "%s (Büyük)" % label_text
+		_debug_label.text = label_text
 
 ## UC-02 Adım 1: Fizik motoru aynı seviyeden bir canlıyla temasını algıladığında çağrılır (body_entered).
 func _on_body_entered(body: Node) -> void:
@@ -77,20 +85,41 @@ func _perform_merge(other: Organism) -> void:
 
 	var contact_point: Vector2 = (global_position + other.global_position) / 2.0
 	var merged_stage_id: int = stage_id
-	var next_stage: Dictionary = OrganismTypes.get_next_stage(merged_stage_id)
 	var container: Node = get_tree().get_first_node_in_group("organism_container")
+	# Solucan büyüme mekaniği: iki tier-0 Solucan birleşince üst aşamaya
+	# ATLAMAZ, sadece daha büyük (tier 1) aynı-aşama bir canlı olur.
+	var grow_instead_of_evolve: bool = _should_grow_instead_of_evolve(other)
 
 	GameManager.add_merge_reward(merged_stage_id, contact_point)
 
 	queue_free()
 	other.queue_free()
 
-	if next_stage.is_empty() or container == null:
+	if container == null:
+		return
+
+	if grow_instead_of_evolve:
+		var grown: Organism = load("res://scenes/Organism.tscn").instantiate()
+		grown.stage_id = merged_stage_id
+		grown.tier = 1
+		container.add_child(grown)
+		grown.global_position = contact_point
+		return
+
+	var next_stage: Dictionary = OrganismTypes.get_next_stage(merged_stage_id)
+	if next_stage.is_empty():
 		return  # UC-02: Son aşama (T-Rex) evrilmeye devam etmez — sadece ödül verilir.
 
 	# load() kasıtlı: preload() kullanılırsa bu script kendi sahnesini derleme
 	# zamanında önceden yükler ve döngüsel (cyclic) bağımlılık hatası oluşur.
 	var evolved: Organism = load("res://scenes/Organism.tscn").instantiate()
 	evolved.stage_id = int(next_stage.get("id", merged_stage_id + 1))
+	evolved.tier = 0  # Yeni aşama her zaman tier 0'dan başlar
 	container.add_child(evolved)
 	evolved.global_position = contact_point
+
+## Solucan büyüme mekaniği: sadece OrganismTypes.TIERED_GROWTH_STAGE_ID
+## aşamasında VE iki taraf da hâlâ tier 0 ise true döner (→ büyüme, evrim
+## yok). Diğer tüm durumlarda false döner (→ normal evrim, eski davranış).
+func _should_grow_instead_of_evolve(other: Organism) -> bool:
+	return stage_id == OrganismTypes.TIERED_GROWTH_STAGE_ID and tier == 0 and other.tier == 0

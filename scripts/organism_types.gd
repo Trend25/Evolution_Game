@@ -36,3 +36,20 @@ func get_stage(stage_id: int) -> Dictionary:
 ## UC-01: Spawner için rastgele bir başlangıç aşaması seçer (0..MAX_SPAWNABLE_STAGE_ID arası).
 func get_random_spawnable_stage_id() -> int:
 	return randi() % (MAX_SPAWNABLE_STAGE_ID + 1)
+
+# Solucan büyüme mekaniği (kullanıcı isteği — "solucan küçük başlasın, üst
+# üste geldikçe büyümeye başlasın"): TIERED_GROWTH_STAGE_ID aşamasında iki
+# tier-0 canlı birleştiğinde bir üst aşamaya ATLAMAZ, sadece daha BÜYÜK
+# (tier 1) aynı-aşama bir canlı olur (bkz. organism.gd
+# _should_grow_instead_of_evolve/_perform_merge). Bu tablo hem organism.gd
+# (fiziksel boyut/merge kararı) hem organism_visual.gd (görsel boyut)
+# tarafından paylaşılır ki ikisi asla birbirinden sapmasın.
+const TIERED_GROWTH_STAGE_ID: int = 2      # Solucan
+const TIER_SIZE_SCALE_STEP: float = 0.35   # tier 1: %35 daha büyük fiziksel/görsel boyut
+
+## Verilen aşama+tier için fiziksel/görsel boyut çarpanını döndürür. Diğer
+## tüm aşamalarda (tier hep 0 kaldığından) her zaman 1.0 döner.
+func tier_size_multiplier(for_stage_id: int, tier: int) -> float:
+	if for_stage_id != TIERED_GROWTH_STAGE_ID or tier <= 0:
+		return 1.0
+	return 1.0 + float(tier) * TIER_SIZE_SCALE_STEP
