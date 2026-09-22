@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/drop_entry_pop.gd" id="1_dropentrypop"]
+
+[node name="DropEntryPop" type="Node2D"]
+script = ExtResource("1_dropentrypop")

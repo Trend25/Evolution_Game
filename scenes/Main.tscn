@@ -15,6 +15,8 @@
 [ext_resource type="Script" path="res://scripts/next_preview.gd" id="13_nextpreview"]
 [ext_resource type="Script" path="res://scripts/merge_feedback_manager.gd" id="14_mergefeedback"]
 [ext_resource type="PackedScene" path="res://scenes/ChainToast.tscn" id="15_chaintoast"]
+[ext_resource type="Script" path="res://scripts/drop_aim_guide.gd" id="16_dropaimguide"]
+[ext_resource type="Script" path="res://scripts/drop_feedback_manager.gd" id="17_dropfeedback"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_left"]
 size = Vector2(20, 1280)
@@ -76,10 +78,16 @@ script = ExtResource("2_spawner")
 left_bound_x = 30.0
 right_bound_x = 690.0
 
+[node name="DropAimGuide" type="Node2D" parent="Spawner"]
+script = ExtResource("16_dropaimguide")
+
 [node name="OrganismContainer" type="Node" parent="." groups=["organism_container"]]
 
 [node name="EffectsLayer" type="Node2D" parent="."]
 script = ExtResource("14_mergefeedback")
+
+[node name="DropFeedbackManager" type="Node2D" parent="."]
+script = ExtResource("17_dropfeedback")
 
 [node name="UI_Canvas" type="CanvasLayer" parent="."]
 layer = 10

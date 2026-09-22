@@ -21,6 +21,14 @@ const BONUS_INTERVAL_MAX_SECONDS: float = 15.0
 const FISH_STAGE_ID: int = 3  # OrganismTypes.STAGES[3] = Balık
 
 signal next_organism_ready(preview_data: Dictionary)  # feat: add dedicated next organism preview -- NEXT UI güncellemesi için
+# feat: add drop aiming and landing feedback -- iki minimal, salt-bilgilendirici
+# sinyal: biri (drag_state_changed) DropAimGuide'ın ne zaman görünür/gizli
+# olacağını, diğeri (organism_dropped) DropFeedbackManager'ın giriş efektini
+# NEREDE ve NORMAL/BONUS mı oynatacağını bildirir. İkisi de sadece Spawner'ın
+# ZATEN yaptığı işin (sürükleme durumu, drop konumu/is_bonus) dışa aktarımıdır --
+# cooldown/bonus/spawn/collision mantığının HİÇBİR parçasını değiştirmez.
+signal drag_state_changed(is_dragging: bool)      # UI/UX rolü: presentation-only aim guide için
+signal organism_dropped(position: Vector2, is_bonus: bool)  # UI/UX rolü: presentation-only giriş efekti için
 
 @export var left_bound_x: float = 0.0
 @export var right_bound_x: float = 720.0
@@ -70,6 +78,7 @@ func _unhandled_input(event: InputEvent) -> void:
 ## UC-01 Adım 1/2: Basılı tutma sürüklemeyi başlatır; parmağı/imleci çekme canlıyı düşürür.
 func _set_dragging(pressed: bool, event_position: Vector2) -> void:
 	_is_dragging = pressed
+	drag_state_changed.emit(_is_dragging)  # feat: add drop aiming and landing feedback
 	if pressed:
 		_handle_drag(event_position)
 	else:
@@ -93,6 +102,10 @@ func _drop_current_organism() -> void:
 	dropped.freeze = false
 	dropped.visible = true  # feat: add dedicated next organism preview -- dunya-uzayinda gorunur olma ani TAM burasi
 	dropped.reparent(organism_container)
+	# feat: add drop aiming and landing feedback -- SADECE GÖRSEL giriş efekti
+	# için; collision/spawn/cooldown/bonus mantığına dokunmaz, zaten hesaplanmış
+	# is_bonus'u dışarı taşır.
+	organism_dropped.emit(dropped.global_position, dropped.is_bonus)
 	_cooldown_remaining = DROP_COOLDOWN_SECONDS
 	_prepare_next_organism()
 
