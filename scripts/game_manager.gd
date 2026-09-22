@@ -14,7 +14,15 @@ const BONUS_ORGANISM_SCORE_MULTIPLIER: float = 4.0
 
 signal score_changed(new_score: int)
 signal xp_changed(new_xp: int)
-signal organism_merged(position: Vector2, merged_stage_id: int)  # UI/UX rolü: Tween/ses/parçacık tetikleyicisi için
+# feat: add merge burst and floating score feedback -- imza genisletildi:
+# is_bonus/awarded_score/score_awarded eklendi ki TEK bir sinyal hem burst
+# (HER basarili merge), hem floating score (YALNIZCA skor verilen merge),
+# hem chain sayaci icin yeterli veriyi tasisin. Onceden bu sinyali dinleyen
+# YOKTU (grep ile dogrulandi, docstring zaten "Tween/ses/parcacik
+# tetikleyicisi icin" diyordu) -- imza genisletmek mevcut hicbir davranisi
+# BOZMAZ. Skor EKONOMISINE (nasil hesaplandigi) dokunmaz, sadece ZATEN
+# hesaplanmis degerleri disari tasir.
+signal organism_merged(position: Vector2, merged_stage_id: int, is_bonus: bool, awarded_score: int, score_awarded: bool)  # UI/UX rolü: Tween/ses/parçacık tetikleyicisi için
 signal lives_changed(new_lives: int)          # UI/UX rolü: LivesUI (3 kalp göstergesi) için
 signal life_lost(lives_remaining: int)        # UI/UX rolü: "Can Kaybı" uyarı animasyonu/sesi için
 signal game_over                              # UC-03 Adım 3: can bitince yayınlanır
@@ -55,7 +63,7 @@ func add_merge_reward(stage_id: int, merge_position: Vector2, is_bonus: bool = f
 	xp += int(stage.get("xp_value", 0))
 	score_changed.emit(score)
 	xp_changed.emit(xp)
-	organism_merged.emit(merge_position, stage_id)
+	organism_merged.emit(merge_position, stage_id, is_bonus, awarded_score, true)  # score_awarded=true -- bu fonksiyon zaten yalnizca gercek bir odul verildiginde calisir
 	_check_level_up()
 
 ## UC-05 Adım 2-3: XP eşiği aşıldıkça seviyeyi artırır (tek merge'te birden

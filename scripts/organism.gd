@@ -110,6 +110,14 @@ func _perform_fish_part_merge(other: Organism) -> void:
 	var container: Node = get_tree().get_first_node_in_group("organism_container")
 	var combined_is_bonus: bool = is_bonus or other.is_bonus  # Bonus Sistemi: iki taraftan biri yeterli
 
+	# feat: add merge burst and floating score feedback -- bu yol
+	# GameManager.add_merge_reward'i HIC CAGIRMAZ (Balik parca tamamlanmasi
+	# skor vermiyor, bkz. yukaridaki yorum), bu yuzden organism_merged
+	# sinyali BURADA, score_awarded=false ve awarded_score=0 ile, AYRICA
+	# yayinlanir -- aksi halde Balik tamamlaninca hicbir burst gorunmezdi.
+	# Skor/XP EKONOMISINE dokunmaz (add_merge_reward hala cagrilmiyor).
+	GameManager.organism_merged.emit(contact_point, stage_id, combined_is_bonus, 0, false)
+
 	queue_free()
 	other.queue_free()
 
