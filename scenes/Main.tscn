@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3]
+[gd_scene load_steps=22 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/spawner.gd" id="2_spawner"]
@@ -17,6 +17,10 @@
 [ext_resource type="PackedScene" path="res://scenes/ChainToast.tscn" id="15_chaintoast"]
 [ext_resource type="Script" path="res://scripts/drop_aim_guide.gd" id="16_dropaimguide"]
 [ext_resource type="Script" path="res://scripts/drop_feedback_manager.gd" id="17_dropfeedback"]
+[ext_resource type="Script" path="res://scripts/pause_button.gd" id="18_pausebutton"]
+[ext_resource type="PackedScene" path="res://scenes/StartScreen.tscn" id="19_startscreen"]
+[ext_resource type="PackedScene" path="res://scenes/PauseScreen.tscn" id="20_pausescreen"]
+[ext_resource type="PackedScene" path="res://scenes/HowToPlayPanel.tscn" id="21_howtoplay"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_left"]
 size = Vector2(20, 1280)
@@ -172,6 +176,9 @@ horizontal_alignment = 2
 text = "0"
 script = ExtResource("5_scorelabel")
 
+[node name="PauseButton" type="Button" parent="UI_Canvas"]
+script = ExtResource("18_pausebutton")
+
 [node name="GameOverScreen" parent="." instance=ExtResource("6_gameoverscreen")]
 layer = 30
 
@@ -180,3 +187,12 @@ layer = 20
 
 [node name="ChainToast" parent="." instance=ExtResource("15_chaintoast")]
 layer = 20
+
+[node name="StartScreen" parent="." instance=ExtResource("19_startscreen")]
+layer = 40
+
+[node name="PauseScreen" parent="." instance=ExtResource("20_pausescreen")]
+layer = 41
+
+[node name="HowToPlayPanel" parent="." instance=ExtResource("21_howtoplay")]
+layer = 42

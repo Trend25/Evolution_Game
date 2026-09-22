@@ -14,6 +14,7 @@ config/features=PackedStringArray("4.3", "GL Compatibility")
 OrganismTypes="*res://scripts/organism_types.gd"
 LeaderboardService="*res://scripts/leaderboard_service.gd"
 GameManager="*res://scripts/game_manager.gd"
+GameFlow="*res://scripts/game_flow.gd"
 
 [display]
 

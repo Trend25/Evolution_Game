@@ -31,6 +31,14 @@ var _rest_position: Vector2 = Vector2.ZERO
 var _chain_count: int = 0
 var _last_merge_ticks_ms: int = -1
 
+## feat: add start pause and how-to-play flow -- GameFlow'un menu amacli
+## (Start/Pause) duraklatmalari sirasinda gecen GERCEK ZAMANLI sureyi
+## zincir penceresi hesabindan DUSMEK icin. Zincir SAYISINA/EKONOMISINE
+## dokunmaz, yalnizca Time.get_ticks_msec() tabanli zaman OLCUMUNU pause-
+## farkinda hale getirir (bkz. _effective_now_ms() ve game_flow.gd).
+var _paused_accum_ms: int = 0
+var _pause_started_ms: int = -1
+
 func _ready() -> void:
 	_capsule.add_theme_stylebox_override("panel", HUDTheme.make_toast_capsule_stylebox())
 	HUDTheme.style_label(_label, HUDTheme.make_spaced_variation(HUDTheme.FONT_UI, 1), 16, HUDTheme.MINT_ACCENT)
@@ -40,6 +48,7 @@ func _ready() -> void:
 	GameManager.organism_merged.connect(_on_organism_merged)
 	GameManager.game_over_ready.connect(_on_reset_state)
 	GameManager.run_reset.connect(_on_reset_state)
+	GameFlow.pause_state_changed.connect(_on_pause_state_changed)
 
 ## ScorePanel'in yatay merkezine hizali, HUD'un hemen altinda -- HUDRoot ile
 ## AYNI merkezi compute_panel_layout()'u kullanir (LevelUpToast'un kendi
@@ -64,7 +73,7 @@ func _position_capsule() -> void:
 func _on_organism_merged(_position: Vector2, _stage_id: int, _is_bonus: bool, _awarded_score: int, score_awarded: bool) -> void:
 	if not score_awarded:
 		return
-	var now_ms: int = Time.get_ticks_msec()
+	var now_ms: int = _effective_now_ms()
 	if _last_merge_ticks_ms >= 0 and float(now_ms - _last_merge_ticks_ms) / 1000.0 <= CHAIN_WINDOW_SECONDS:
 		_chain_count += 1
 	else:
@@ -72,6 +81,19 @@ func _on_organism_merged(_position: Vector2, _stage_id: int, _is_bonus: bool, _a
 	_last_merge_ticks_ms = now_ms
 	if _chain_count >= 2:
 		_show_chain(_chain_count)
+
+## GameFlow'un menu pause'u sirasinda gecen sureyi disarida birakan
+## "efektif" zaman -- iki cagridaki (store/compare) pause araligi ayni
+## sekilde dusuldugunden aralarindaki FARK dogru kalir.
+func _effective_now_ms() -> int:
+	return Time.get_ticks_msec() - _paused_accum_ms
+
+func _on_pause_state_changed(is_paused: bool) -> void:
+	if is_paused:
+		_pause_started_ms = Time.get_ticks_msec()
+	elif _pause_started_ms >= 0:
+		_paused_accum_ms += Time.get_ticks_msec() - _pause_started_ms
+		_pause_started_ms = -1
 
 func _show_chain(count: int) -> void:
 	if _active_tween != null and _active_tween.is_valid():
@@ -101,3 +123,5 @@ func _on_reset_state(_final_stats: Dictionary = {}) -> void:
 	_capsule.modulate.a = 0.0
 	_chain_count = 0
 	_last_merge_ticks_ms = -1
+	_paused_accum_ms = 0
+	_pause_started_ms = -1
