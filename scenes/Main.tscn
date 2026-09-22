@@ -74,8 +74,7 @@ script = ExtResource("2_spawner")
 left_bound_x = 30.0
 right_bound_x = 690.0
 
-[node name="OrganismContainer" type="Node" parent="."]
-groups = ["organism_container"]
+[node name="OrganismContainer" type="Node" parent="." groups=["organism_container"]]
 
 [node name="UI_Canvas" type="CanvasLayer" parent="."]
 layer = 10
