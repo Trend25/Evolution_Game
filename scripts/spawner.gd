@@ -20,6 +20,8 @@ const BONUS_INTERVAL_MAX_SECONDS: float = 15.0
 # Parçası" düşürür (bkz. organism.gd is_fish_part/fish_part_index).
 const FISH_STAGE_ID: int = 3  # OrganismTypes.STAGES[3] = Balık
 
+signal next_organism_ready(preview_data: Dictionary)  # feat: add dedicated next organism preview -- NEXT UI güncellemesi için
+
 @export var left_bound_x: float = 0.0
 @export var right_bound_x: float = 720.0
 
@@ -89,6 +91,7 @@ func _drop_current_organism() -> void:
 	var dropped: Organism = _pending_organism
 	_pending_organism = null
 	dropped.freeze = false
+	dropped.visible = true  # feat: add dedicated next organism preview -- dunya-uzayinda gorunur olma ani TAM burasi
 	dropped.reparent(organism_container)
 	_cooldown_remaining = DROP_COOLDOWN_SECONDS
 	_prepare_next_organism()
@@ -124,5 +127,24 @@ func _prepare_next_organism() -> void:
 	_pending_organism.freeze = true
 	_pending_organism.is_bonus = _bonus_flag_ready  # Bonus Sistemi: bekleyen bayrak varsa yeni canlıya uygula
 	_bonus_flag_ready = false
+	# feat: add dedicated next organism preview -- gercek fizik objesi drop
+	# edilene kadar dunya-uzayinda GORUNMEZ (NEXT panelinin kendi ayri
+	# TextureRect onizlemesi gorunur olani ustlenir, bkz. next_preview.gd).
+	_pending_organism.visible = false
 	add_child(_pending_organism)
 	_pending_organism.position = Vector2.ZERO
+	next_organism_ready.emit(get_pending_preview_data())
+
+## feat: add dedicated next organism preview -- NEXT paneli icin, bekleyen
+## canlinin gorsel kimligini (stage_id/is_bonus/is_fish_part/fish_part_index)
+## salt-okunur bir Dictionary olarak disa verir. Fizik/collision/merge/spawn
+## mantigina dokunmaz.
+func get_pending_preview_data() -> Dictionary:
+	if _pending_organism == null:
+		return {}
+	return {
+		"stage_id": _pending_organism.stage_id,
+		"is_bonus": _pending_organism.is_bonus,
+		"is_fish_part": _pending_organism.is_fish_part,
+		"fish_part_index": _pending_organism.fish_part_index,
+	}

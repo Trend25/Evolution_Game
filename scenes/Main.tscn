@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3]
+[gd_scene load_steps=18 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/spawner.gd" id="2_spawner"]
@@ -11,6 +11,8 @@
 [ext_resource type="Script" path="res://scripts/background_visual.gd" id="9_backgroundvisual"]
 [ext_resource type="Texture2D" path="res://assets/background/evolution_playfield_v3_720x1280.png" id="10_bgplayfieldv3"]
 [ext_resource type="Script" path="res://scripts/hud_root.gd" id="11_hudroot"]
+[ext_resource type="Script" path="res://scripts/level_label.gd" id="12_levellabel"]
+[ext_resource type="Script" path="res://scripts/next_preview.gd" id="13_nextpreview"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_left"]
 size = Vector2(20, 1280)
@@ -86,29 +88,76 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 
-[node name="TopLeftAnchor" type="Control" parent="UI_Canvas/HUDRoot"]
+[node name="LeftPanel" type="Panel" parent="UI_Canvas/HUDRoot"]
 mouse_filter = 2
 
-[node name="LivesUI" type="Node2D" parent="UI_Canvas/HUDRoot/TopLeftAnchor"]
-position = Vector2(40, 40)
+[node name="LivesUI" type="Node2D" parent="UI_Canvas/HUDRoot/LeftPanel"]
 script = ExtResource("4_livesui")
 
-[node name="XPBar" type="Node2D" parent="UI_Canvas/HUDRoot/TopLeftAnchor"]
-position = Vector2(40, 70)
+[node name="LevelLabel" type="Label" parent="UI_Canvas/HUDRoot/LeftPanel"]
+mouse_filter = 2
+text = "LVL 1"
+script = ExtResource("12_levellabel")
+
+[node name="XPBar" type="Node2D" parent="UI_Canvas/HUDRoot/LeftPanel"]
 script = ExtResource("7_xpbar")
 
-[node name="ScoreLabel" type="Label" parent="UI_Canvas/HUDRoot"]
-anchor_left = 1.0
+[node name="NextPanel" type="Panel" parent="UI_Canvas/HUDRoot"]
+mouse_filter = 2
+script = ExtResource("13_nextpreview")
+
+[node name="NextLabel" type="Label" parent="UI_Canvas/HUDRoot/NextPanel"]
+anchor_left = 0.0
 anchor_top = 0.0
 anchor_right = 1.0
 anchor_bottom = 0.0
-offset_left = -240.0
-offset_top = 20.0
-offset_right = -20.0
-offset_bottom = 60.0
+offset_top = 10.0
+offset_bottom = 26.0
+mouse_filter = 2
+horizontal_alignment = 1
+text = "NEXT"
+
+[node name="PreviewRect" type="TextureRect" parent="UI_Canvas/HUDRoot/NextPanel"]
+anchor_left = 0.5
+anchor_top = 0.0
+anchor_right = 0.5
+anchor_bottom = 0.0
+offset_left = -54.0
+offset_top = 30.0
+offset_right = 54.0
+offset_bottom = 114.0
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ScorePanel" type="Panel" parent="UI_Canvas/HUDRoot"]
+mouse_filter = 2
+
+[node name="ScoreCaption" type="Label" parent="UI_Canvas/HUDRoot/ScorePanel"]
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 0.0
+offset_left = 16.0
+offset_top = 28.0
+offset_right = -16.0
+offset_bottom = 46.0
 mouse_filter = 2
 horizontal_alignment = 2
-text = "Skor: 0"
+text = "SCORE"
+
+[node name="ScoreValue" type="Label" parent="UI_Canvas/HUDRoot/ScorePanel"]
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 0.0
+offset_left = 16.0
+offset_top = 50.0
+offset_right = -16.0
+offset_bottom = 96.0
+mouse_filter = 2
+horizontal_alignment = 2
+text = "0"
 script = ExtResource("5_scorelabel")
 
 [node name="GameOverScreen" parent="." instance=ExtResource("6_gameoverscreen")]

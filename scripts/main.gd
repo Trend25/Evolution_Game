@@ -10,10 +10,19 @@ class_name Main
 ## kararı kullanıcıyla teyit etmesi önerilir.
 
 @onready var organism_container: Node = $OrganismContainer
+@onready var _spawner: Spawner = $Spawner
+@onready var _next_preview: NextPreview = $UI_Canvas/HUDRoot/NextPanel
 
 func _ready() -> void:
 	GameManager.life_lost.connect(_on_life_lost)
 	GameManager.run_reset.connect(_clear_organism_container)
+	# feat: add dedicated next organism preview -- Spawner sinyalini NEXT
+	# UI'a bagla, VE ilk kare icin bekleyen canliyi elle senkronize et (Godot
+	# _ready() cocuktan-ebeveyne dogru calisir; Spawner._ready() ilk
+	# next_organism_ready'i Main._ready() BAGLANMADAN once yayinlar --
+	# bu satir o yarisi onler). Oynanis/spawn mantigina dokunmaz.
+	_spawner.next_organism_ready.connect(_next_preview.update_preview)
+	_next_preview.update_preview(_spawner.get_pending_preview_data())
 
 ## UC-03 Adım 2: Can kaybında fanustaki tüm canlıları kaldırır.
 func _on_life_lost(_lives_remaining: int) -> void:
