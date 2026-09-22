@@ -14,6 +14,7 @@
 [ext_resource type="Script" path="res://scripts/level_label.gd" id="12_levellabel"]
 [ext_resource type="Script" path="res://scripts/next_preview.gd" id="13_nextpreview"]
 [ext_resource type="Script" path="res://scripts/merge_feedback_manager.gd" id="14_mergefeedback"]
+[ext_resource type="PackedScene" path="res://scenes/ChainToast.tscn" id="15_chaintoast"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_left"]
 size = Vector2(20, 1280)
@@ -167,4 +168,7 @@ script = ExtResource("5_scorelabel")
 layer = 30
 
 [node name="LevelUpToast" parent="." instance=ExtResource("8_levelup")]
+layer = 20
+
+[node name="ChainToast" parent="." instance=ExtResource("15_chaintoast")]
 layer = 20
