@@ -5,14 +5,15 @@
 [node name="LevelUpToast" type="CanvasLayer"]
 script = ExtResource("1_levelup")
 
-[node name="Label" type="Label" parent="."]
-anchor_left = 0.5
+[node name="Capsule" type="Panel" parent="."]
+mouse_filter = 2
+
+[node name="Label" type="Label" parent="Capsule"]
+anchor_left = 0.0
 anchor_top = 0.0
-anchor_right = 0.5
-anchor_bottom = 0.0
-offset_left = -140.0
-offset_top = 70.0
-offset_right = 140.0
-offset_bottom = 110.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
 horizontal_alignment = 1
-text = "Seviye Atladın!"
+vertical_alignment = 1
+text = "LEVEL 1"

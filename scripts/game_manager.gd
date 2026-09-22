@@ -29,8 +29,16 @@ var lives: int = MAX_LIVES
 var level: int = 1
 var unlocked_rewards: Array[String] = []  # UC-05 Adım 3: açılan kozmetik ödül id'leri (kalıcı profil verisi)
 
+# style: apply polished HUD and run summary -- Run Summary ekranındaki "RUN XP"
+# alanı için, SADECE bu turda kazanılan XP'yi izleyen ek bir bookkeeping
+# değişkeni. XP EKONOMİSİNE (nasıl kazanılır, seviye eşikleri, kalıcılık —
+# xp hâlâ reset_run()'da SIFIRLANMAZ) dokunmaz; yalnızca xp'nin turun
+# BAŞINDAKİ değerini saklar ki final_stats bir fark hesaplayabilsin.
+var _run_start_xp: int = 0
+
 func _ready() -> void:
 	game_over.connect(_on_game_over)
+	_run_start_xp = xp  # oyun açılışında xp=0
 
 ## UC-02 Adım 3: Merge sonucu kazanılan skor ve XP'yi ekler, ilgili sinyalleri
 ## yayınlar. Bonus Sistemi: is_bonus true ise (Spawner'ın ürettiği özel canlı
@@ -79,6 +87,7 @@ func _on_game_over() -> void:
 	var final_stats: Dictionary = {
 		"score": score,
 		"xp": xp,
+		"xp_gained": xp - _run_start_xp,  # style: apply polished HUD and run summary -- Run Summary "RUN XP" alanı için
 		"level": level,
 		"achievements": [],  # UC-06 henüz kodlanmadı; şimdilik boş liste
 	}
@@ -97,4 +106,5 @@ func reset_run() -> void:
 	get_tree().paused = false
 	score_changed.emit(score)
 	lives_changed.emit(lives)
+	_run_start_xp = xp  # style: apply polished HUD and run summary -- yeni turun XP başlangıcı; kalıcı xp'ye DOKUNMAZ
 	run_reset.emit()
