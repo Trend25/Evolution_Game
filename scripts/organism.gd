@@ -117,8 +117,15 @@ func _perform_fish_part_merge(other: Organism) -> void:
 		return
 
 	var completed: Organism = load("res://scenes/Organism.tscn").instantiate()
+	# fix: preserve bonus state across merges -- TÜM başlangıç alanları
+	# add_child()'dan ÖNCE set edilir (organism_visual.gd'nin _ready()'si
+	# is_bonus/is_fish_part/fish_part_index/tier'ı tam bu anda, senkron
+	# olarak okur; sonradan atama görsel tint/halo'yu KAÇIRIR).
 	completed.stage_id = stage_id  # Balık — parçalar zaten bu id'yi taşıyordu, sadece tamamlanıyor
-	completed.is_bonus = combined_is_bonus
+	completed.tier = 0  # Balık'ta tier kullanılmıyor (TIERED_GROWTH_STAGE_ID değil) — nötr/varsayılan değer
+	completed.is_bonus = combined_is_bonus  # zaten doğruydu (bu yolda hep add_child'dan önceydi) -- açıklık için korunuyor
+	completed.is_fish_part = false  # artık tamamlanmış tam bir Balık -- parça değil (önceden zaten varsayılan değerle doğruydu, artık açık)
+	completed.fish_part_index = 0  # nötr/varsayılan değer (tamamlanmış Balık'ta anlamsız)
 	container.add_child(completed)
 	completed.global_position = contact_point
 
@@ -147,8 +154,16 @@ func _perform_merge(other: Organism) -> void:
 
 	if grow_instead_of_evolve:
 		var grown: Organism = load("res://scenes/Organism.tscn").instantiate()
+		# fix: preserve bonus state across merges -- TÜM başlangıç alanları
+		# add_child()'dan ÖNCE set edilir (bkz. yukarıdaki not / final rapor:
+		# organism_visual.gd _ready() is_bonus'u add_child anında, tek seferlik
+		# okur -- sonradan atarsak halo/tint hiç oluşmaz, gameplay alanı doğru
+		# görünse bile).
 		grown.stage_id = merged_stage_id
 		grown.tier = 1
+		grown.is_bonus = combined_is_bonus  # KÖK NEDEN DÜZELTMESİ -- önceden hiç atanmıyordu, bonus statüsü burada kayboluyordu
+		grown.is_fish_part = false  # nötr/varsayılan değer -- Solucan büyümesi balık parçası değildir
+		grown.fish_part_index = 0  # nötr/varsayılan değer
 		container.add_child(grown)
 		grown.global_position = contact_point
 		return
@@ -160,8 +175,13 @@ func _perform_merge(other: Organism) -> void:
 	# load() kasıtlı: preload() kullanılırsa bu script kendi sahnesini derleme
 	# zamanında önceden yükler ve döngüsel (cyclic) bağımlılık hatası oluşur.
 	var evolved: Organism = load("res://scenes/Organism.tscn").instantiate()
+	# fix: preserve bonus state across merges -- TÜM başlangıç alanları
+	# add_child()'dan ÖNCE set edilir (bkz. yukarıdaki not / final rapor).
 	evolved.stage_id = int(next_stage.get("id", merged_stage_id + 1))
 	evolved.tier = 0  # Yeni aşama her zaman tier 0'dan başlar
+	evolved.is_bonus = combined_is_bonus  # KÖK NEDEN DÜZELTMESİ -- önceden hiç atanmıyordu, bonus statüsü burada kayboluyordu
+	evolved.is_fish_part = false  # nötr/varsayılan değer -- normal evrimle oluşan canlı balık parçası değildir
+	evolved.fish_part_index = 0  # nötr/varsayılan değer
 	container.add_child(evolved)
 	evolved.global_position = contact_point
 
