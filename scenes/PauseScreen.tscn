@@ -21,7 +21,7 @@ anchor_bottom = 0.5
 offset_left = -240.0
 offset_top = -160.0
 offset_right = 240.0
-offset_bottom = 160.0
+offset_bottom = 200.0
 mouse_filter = 2
 
 [node name="TitleLabel" type="Label" parent="Panel"]
@@ -71,3 +71,15 @@ offset_right = 110.0
 offset_bottom = 286.0
 mouse_filter = 2
 text = "RESTART RUN"
+
+[node name="SettingsButton" type="Button" parent="Panel"]
+anchor_left = 0.5
+anchor_top = 0.0
+anchor_right = 0.5
+anchor_bottom = 0.0
+offset_left = -110.0
+offset_top = 302.0
+offset_right = 110.0
+offset_bottom = 350.0
+mouse_filter = 2
+text = "SETTINGS"

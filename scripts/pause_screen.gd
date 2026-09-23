@@ -12,6 +12,7 @@ class_name PauseScreen
 @onready var _resume_button: Button = $Panel/ResumeButton
 @onready var _how_to_play_button: Button = $Panel/HowToPlayButton
 @onready var _restart_button: Button = $Panel/RestartButton
+@onready var _settings_button: Button = $Panel/SettingsButton
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS  # get_tree().paused = true iken de düğmeler çalışsın
@@ -19,7 +20,10 @@ func _ready() -> void:
 	_apply_style()
 	_resume_button.pressed.connect(_on_resume_pressed)
 	_how_to_play_button.pressed.connect(_on_how_to_play_pressed)
+	_how_to_play_button.pressed.connect(AudioManager.play_ui_tick)  # feat: add sound haptics -- genel navigasyon tıkı (Resume/Restart Run'ın kendi özel sesleri var, burada TEKRAR eklenmez)
 	_restart_button.pressed.connect(_on_restart_pressed)
+	_settings_button.pressed.connect(_on_settings_pressed)
+	_settings_button.pressed.connect(AudioManager.play_ui_tick)
 	GameFlow.state_changed.connect(_on_state_changed)
 
 func _on_state_changed(new_state: int) -> void:
@@ -34,6 +38,9 @@ func _on_how_to_play_pressed() -> void:
 func _on_restart_pressed() -> void:
 	GameFlow.restart_run()
 
+func _on_settings_pressed() -> void:
+	GameFlow.open_settings()
+
 func _apply_style() -> void:
 	$Panel.add_theme_stylebox_override("panel", HUDTheme.make_summary_panel_stylebox())
 	HUDTheme.style_label(_title_label, HUDTheme.make_spaced_variation(HUDTheme.FONT_UI, 3), 22, HUDTheme.TEXT_PRIMARY)
@@ -41,6 +48,7 @@ func _apply_style() -> void:
 	_style_button(_resume_button, "RESUME")
 	_style_button(_how_to_play_button, "HOW TO PLAY")
 	_style_button(_restart_button, "RESTART RUN")
+	_style_button(_settings_button, "SETTINGS")
 
 func _style_button(button: Button, label_text: String) -> void:
 	button.text = label_text

@@ -13,6 +13,7 @@ class_name StartScreen
 @onready var _title_label: Label = $Panel/TitleLabel
 @onready var _play_button: Button = $Panel/PlayButton
 @onready var _how_to_play_button: Button = $Panel/HowToPlayButton
+@onready var _settings_button: Button = $Panel/SettingsButton
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS  # Dünya duraklıyken de bu ekranın düğmeleri çalışsın
@@ -20,6 +21,9 @@ func _ready() -> void:
 	_apply_style()
 	_play_button.pressed.connect(_on_play_pressed)
 	_how_to_play_button.pressed.connect(_on_how_to_play_pressed)
+	_how_to_play_button.pressed.connect(AudioManager.play_ui_tick)  # feat: add sound haptics -- genel navigasyon tıkı (PLAY'in kendi start_retry sesi var, burada TEKRAR eklenmez)
+	_settings_button.pressed.connect(_on_settings_pressed)
+	_settings_button.pressed.connect(AudioManager.play_ui_tick)
 	GameFlow.state_changed.connect(_on_state_changed)
 	visible = GameFlow.current_state == GameFlow.State.START
 
@@ -32,6 +36,9 @@ func _on_play_pressed() -> void:
 func _on_how_to_play_pressed() -> void:
 	GameFlow.open_how_to_play()
 
+func _on_settings_pressed() -> void:
+	GameFlow.open_settings()
+
 ## Görsel stil -- GameOverScreen._apply_style() ile AYNI merkezi HUDTheme
 ## kaynağından, aynı desenle (soft indie / cozy oddball, büyük çocuk oyunu
 ## butonları veya parlak renkler yok, maskot yok).
@@ -40,6 +47,7 @@ func _apply_style() -> void:
 	HUDTheme.style_label(_title_label, HUDTheme.make_spaced_variation(HUDTheme.FONT_NUMBER, 1), 36, HUDTheme.TEXT_PRIMARY)
 	_style_button(_play_button, "PLAY")
 	_style_button(_how_to_play_button, "HOW TO PLAY")
+	_style_button(_settings_button, "SETTINGS")
 
 func _style_button(button: Button, label_text: String) -> void:
 	button.text = label_text

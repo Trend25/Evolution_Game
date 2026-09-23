@@ -15,6 +15,7 @@ OrganismTypes="*res://scripts/organism_types.gd"
 LeaderboardService="*res://scripts/leaderboard_service.gd"
 GameManager="*res://scripts/game_manager.gd"
 GameFlow="*res://scripts/game_flow.gd"
+AudioManager="*res://scripts/audio_manager.gd"
 
 [display]
 

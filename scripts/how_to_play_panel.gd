@@ -20,6 +20,7 @@ func _ready() -> void:
 	visible = false
 	_apply_style()
 	_close_button.pressed.connect(_on_close_pressed)
+	_close_button.pressed.connect(AudioManager.play_ui_tick)  # feat: add sound haptics -- genel navigasyon tıkı
 	GameFlow.state_changed.connect(_on_state_changed)
 
 func _on_state_changed(new_state: int) -> void:

@@ -17,7 +17,7 @@ extends Node
 ## GameManager.reset_run() fonksiyonunu çağırır -- reset/skor/XP mantığı
 ## KOPYALANMAZ, ikisi de run_reset sinyaliyle buraya PLAYING durumuna geçer.
 
-enum State { START, PLAYING, PAUSED, HOW_TO_PLAY, GAME_OVER }
+enum State { START, PLAYING, PAUSED, HOW_TO_PLAY, GAME_OVER, SETTINGS }
 
 signal state_changed(new_state: int)
 ## Yalnızca BU script'in menü amaçlı (Start/Pause) duraklatma geçişlerinde
@@ -29,6 +29,7 @@ signal pause_state_changed(is_paused: bool)
 
 var current_state: int = State.START
 var _how_to_play_return_state: int = State.START
+var _settings_return_state: int = State.START  # feat: add sound haptics and persistent settings -- How to Play'deki _how_to_play_return_state ile AYNI desen
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS  # Pause/Start sırasında da Android Back/Escape işlensin
@@ -55,6 +56,8 @@ func _handle_back() -> void:
 	match current_state:
 		State.HOW_TO_PLAY:
 			close_how_to_play()
+		State.SETTINGS:
+			close_settings()  # feat: add sound haptics and persistent settings -- How to Play ile AYNI öncelik katmanı: açık panel varsa önce o kapanır
 		State.PAUSED:
 			resume()
 		State.PLAYING:
@@ -112,6 +115,22 @@ func close_how_to_play() -> void:
 	if current_state != State.HOW_TO_PLAY:
 		return
 	_set_state(_how_to_play_return_state)
+
+## Settings -- yalnızca Start veya Pause'dan açılabilir; kapanınca geldiği
+## ekrana (Start ya da Pause) döner. open_how_to_play()/close_how_to_play()
+## ile BİREBİR AYNI desen -- arka planda oyunu YENİDEN BAŞLATMAZ (reset_run()
+## burada da ASLA çağrılmaz). Oynanış/skor/XP/spawn/bonus/collision/physics
+## EKONOMİSİNE dokunmaz, yalnızca akış durumunu değiştirir.
+func open_settings() -> void:
+	if current_state != State.START and current_state != State.PAUSED:
+		return
+	_settings_return_state = current_state
+	_set_state(State.SETTINGS)
+
+func close_settings() -> void:
+	if current_state != State.SETTINGS:
+		return
+	_set_state(_settings_return_state)
 
 ## GameManager.run_reset (0 argümanlı) -- hem Pause'un "Restart Run" hem de
 ## Game Over'ın "Play again" düğmesi buraya reset_run() üzerinden ulaşır.

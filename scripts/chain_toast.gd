@@ -96,6 +96,7 @@ func _on_pause_state_changed(is_paused: bool) -> void:
 		_pause_started_ms = -1
 
 func _show_chain(count: int) -> void:
+	AudioManager.play_chain(count)  # feat: add sound haptics -- SADECE ses; chain sayısı/penceresi hesabına dokunmaz, zaten alınmış karar sese çevrilir
 	if _active_tween != null and _active_tween.is_valid():
 		_active_tween.kill()
 	_label.text = "CHAIN ×%d" % count

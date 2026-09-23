@@ -106,6 +106,7 @@ func _drop_current_organism() -> void:
 	# için; collision/spawn/cooldown/bonus mantığına dokunmaz, zaten hesaplanmış
 	# is_bonus'u dışarı taşır.
 	organism_dropped.emit(dropped.global_position, dropped.is_bonus)
+	AudioManager.play_drop()  # feat: add sound haptics -- SADECE ses/haptic; drop/cooldown/spawn/bonus mantığına dokunmaz
 	_cooldown_remaining = DROP_COOLDOWN_SECONDS
 	_prepare_next_organism()
 
