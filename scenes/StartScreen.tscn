@@ -45,7 +45,6 @@ offset_left = -110.0
 offset_top = 180.0
 offset_right = 110.0
 offset_bottom = 228.0
-mouse_filter = 2
 text = "PLAY"
 
 [node name="HowToPlayButton" type="Button" parent="Panel"]
@@ -57,7 +56,6 @@ offset_left = -110.0
 offset_top = 244.0
 offset_right = 110.0
 offset_bottom = 292.0
-mouse_filter = 2
 text = "HOW TO PLAY"
 
 [node name="SettingsButton" type="Button" parent="Panel"]
@@ -69,5 +67,4 @@ offset_left = -110.0
 offset_top = 308.0
 offset_right = 110.0
 offset_bottom = 356.0
-mouse_filter = 2
 text = "SETTINGS"

@@ -45,7 +45,6 @@ offset_left = -110.0
 offset_top = 110.0
 offset_right = 110.0
 offset_bottom = 158.0
-mouse_filter = 2
 text = "RESUME"
 
 [node name="HowToPlayButton" type="Button" parent="Panel"]
@@ -57,7 +56,6 @@ offset_left = -110.0
 offset_top = 174.0
 offset_right = 110.0
 offset_bottom = 222.0
-mouse_filter = 2
 text = "HOW TO PLAY"
 
 [node name="RestartButton" type="Button" parent="Panel"]
@@ -69,7 +67,6 @@ offset_left = -110.0
 offset_top = 238.0
 offset_right = 110.0
 offset_bottom = 286.0
-mouse_filter = 2
 text = "RESTART RUN"
 
 [node name="SettingsButton" type="Button" parent="Panel"]
@@ -81,5 +78,4 @@ offset_left = -110.0
 offset_top = 302.0
 offset_right = 110.0
 offset_bottom = 350.0
-mouse_filter = 2
 text = "SETTINGS"

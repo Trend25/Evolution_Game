@@ -57,7 +57,6 @@ offset_left = -70.0
 offset_top = 118.0
 offset_right = 70.0
 offset_bottom = 160.0
-mouse_filter = 2
 text = "ON"
 
 [node name="HapticsCaption" type="Label" parent="Panel"]
@@ -81,7 +80,6 @@ offset_left = -70.0
 offset_top = 212.0
 offset_right = 70.0
 offset_bottom = 254.0
-mouse_filter = 2
 text = "ON"
 
 [node name="BackButton" type="Button" parent="Panel"]
@@ -93,5 +91,4 @@ offset_left = -90.0
 offset_top = 270.0
 offset_right = 90.0
 offset_bottom = 318.0
-mouse_filter = 2
 text = "BACK"

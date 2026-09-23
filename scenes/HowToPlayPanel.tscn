@@ -57,5 +57,4 @@ offset_left = -90.0
 offset_top = 300.0
 offset_right = 90.0
 offset_bottom = 348.0
-mouse_filter = 2
 text = "CLOSE"

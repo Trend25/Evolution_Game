@@ -7,6 +7,12 @@ name: Android Debug APK
 # hosted ubuntu-latest runner image (no third-party SDK mirror), and the
 # official Godot Engine GitHub release assets, downloaded straight from
 # github.com/godotengine/godot at a pinned version tag.
+#
+# v2 (round 2): also verifies package ID, orientation and supported
+# architectures directly from the built APK's manifest via aapt, using the
+# same official runner-provided Android SDK build-tools (no third-party
+# tool). Artifact renamed to evrim-android-debug-v2 so it cannot be confused
+# with the v1 artifact from the previous (landscape/touch-bug) build.
 
 "on":
   push:
@@ -85,13 +91,29 @@ jobs:
           sha256sum evrim_debug.apk | tee evrim_debug.apk.sha256.txt
           ls -la evrim_debug.apk
 
+      - name: Inspect built APK manifest (package ID / orientation / architectures)
+        run: |
+          BT_DIR=$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)
+          AAPT="$ANDROID_HOME/build-tools/$BT_DIR/aapt"
+          {
+            echo "== aapt dump badging (package/name/sdk) =="
+            "$AAPT" dump badging builds/evrim_debug.apk
+            echo
+            echo "== aapt dump xmltree AndroidManifest.xml (package + screenOrientation) =="
+            "$AAPT" dump xmltree builds/evrim_debug.apk AndroidManifest.xml | grep -iE "package=|screenOrientation"
+            echo
+            echo "== native library architectures (lib/<abi>/) =="
+            unzip -l builds/evrim_debug.apk | grep -E "lib/[^/]+/" | awk '{print $4}' | awk -F/ '{print $2}' | sort -u
+          } | tee builds/manifest_inspection.txt
+
       # actions/upload-artifact v4.6.2, pinned by commit SHA
       - name: Upload APK artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: evrim-debug-apk
+          name: evrim-android-debug-v2
           path: |
             builds/evrim_debug.apk
             builds/evrim_debug.apk.sha256.txt
+            builds/manifest_inspection.txt
           if-no-files-found: error
           retention-days: 14
