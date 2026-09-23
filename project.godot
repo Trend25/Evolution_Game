@@ -14,6 +14,10 @@ boot_splash/image="res://assets/app_identity/boot_splash_720x1280.png"
 boot_splash/fullsize=true
 boot_splash/use_filter=true
 
+[rendering]
+
+textures/vram_compression/import_etc2_astc=true
+
 [autoload]
 
 OrganismTypes="*res://scripts/organism_types.gd"
