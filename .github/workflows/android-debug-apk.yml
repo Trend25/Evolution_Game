@@ -1,0 +1,97 @@
+name: Android Debug APK
+
+# Evrim - debug-only Android export for the app icon/splash/portrait QA pass.
+# Scope: builds an UNSIGNED-for-release / debug-signed APK only. Does NOT
+# touch release signing, keystores, GitHub secrets, AAB, or Play Store
+# artifacts. Uses only the Android SDK already installed on the GitHub-
+# hosted ubuntu-latest runner image (no third-party SDK mirror), and the
+# official Godot Engine GitHub release assets, downloaded straight from
+# github.com/godotengine/godot at a pinned version tag.
+
+"on":
+  push:
+    branches:
+      - release/android-export-v1
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+env:
+  GODOT_VERSION: "4.7.2-stable"
+  GODOT_VERSION_DIR: "4.7.2.stable"
+
+jobs:
+  build-debug-apk:
+    runs-on: ubuntu-24.04
+    steps:
+      # actions/checkout v4.2.2, pinned by commit SHA
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Verify Android SDK on runner (pre-installed, official)
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+          test -d "$ANDROID_HOME/platform-tools" || { echo "::error::platform-tools missing on runner image"; exit 1; }
+          ls "$ANDROID_HOME/build-tools" || { echo "::error::build-tools missing on runner image"; exit 1; }
+          "$ANDROID_HOME/platform-tools/adb" version
+
+      - name: Ensure a usable build-tools version is installed (official sdkmanager, no third-party mirror)
+        run: |
+          BT_DIR=$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)
+          if [ -z "$BT_DIR" ]; then
+            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" "platform-tools" "build-tools;34.0.0"
+          fi
+          echo "Using build-tools: $(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
+
+      - name: Download Godot editor (official godotengine/godot GitHub release, pinned version)
+        run: |
+          curl -fL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          unzip -q godot.zip
+          chmod +x "Godot_v${GODOT_VERSION}_linux.x86_64"
+
+      - name: Download Godot export templates (official godotengine/godot GitHub release, pinned version)
+        run: |
+          curl -fL -o templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_export_templates.tpz"
+          mkdir -p "$HOME/.local/share/godot/export_templates/${GODOT_VERSION_DIR}"
+          unzip -q templates.tpz -d /tmp/godot_templates
+          mv /tmp/godot_templates/templates/* "$HOME/.local/share/godot/export_templates/${GODOT_VERSION_DIR}/"
+
+      - name: Point Godot's editor settings at the runner's Android SDK (no keystore, no secrets)
+        run: |
+          mkdir -p "$HOME/.config/godot"
+          cat > "$HOME/.config/godot/editor_settings-4.7.tres" << EOF
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/android_sdk_path = "$ANDROID_HOME"
+          EOF
+
+      - name: Import project (parser/import check)
+        run: ./Godot_v${GODOT_VERSION}_linux.x86_64 --headless --path . --import --quit
+
+      - name: Import project again (verify clean on second pass)
+        run: ./Godot_v${GODOT_VERSION}_linux.x86_64 --headless --path . --import --quit
+
+      - name: Export debug APK
+        run: |
+          mkdir -p builds
+          ./Godot_v${GODOT_VERSION}_linux.x86_64 --headless --path . --export-debug "Android" builds/evrim_debug.apk
+
+      - name: Compute SHA-256 and report size
+        run: |
+          cd builds
+          sha256sum evrim_debug.apk | tee evrim_debug.apk.sha256.txt
+          ls -la evrim_debug.apk
+
+      # actions/upload-artifact v4.6.2, pinned by commit SHA
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: evrim-debug-apk
+          path: |
+            builds/evrim_debug.apk
+            builds/evrim_debug.apk.sha256.txt
+          if-no-files-found: error
+          retention-days: 14
