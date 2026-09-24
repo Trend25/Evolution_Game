@@ -41,7 +41,29 @@ var _next_bonus_threshold_seconds: float = randf_range(BONUS_INTERVAL_MIN_SECOND
 var _bonus_flag_ready: bool = false
 var _force_next_fish_part_index: int = -1  # -1 = bekleyen zorunlu eşleşme yok
 
+# fix: recover stalled gameplay loop -- KÖK NEDEN düzeltmesi. Bekleyen
+# ("next") canlı Organism.tscn'de contact_monitor=true ile TAM fiziksel
+# olarak çarpışma-aktif instantiate edilir ve organism.gd'deki merge-arm
+# zamanlayıcısı (MERGE_ARM_DELAY) bırakılma durumuna bakmaksızın KOŞULSUZ
+# işler. Bekleyen canlı Spawner'ın çocuğu olarak SABİT spawn noktasında
+# durduğundan, düşmekte olan/yeni yerleşmiş aynı-aşama bir canlı ona geri
+# değip erken bir merge tetikleyebilir (~%20 ihtimal, OrganismTypes'ın
+# 5 üretilebilir aşama üzerinde tekdüze rastgele seçimiyle) -- bu da
+# organism.gd._perform_merge()'in HEM kendisini HEM de bekleyen canlıyı
+# queue_free() etmesine yol açar. spawner.gd bu referansı hiçbir zaman
+# is_instance_valid() ile doğrulamadığından, bir sonraki bırakma denemesi
+# artık silinmiş nesneye erişip çöker ve _pending_organism sonsuza dek
+# null/üretimsiz kalırdı (üretim SESSİZCE durur, oyun donmuş görünür).
+#
+# Bu iki alan, bekleyen canlının GERÇEK collision_layer/collision_mask
+# değerlerini (Organism.tscn'in kendi varsayılanları) SAKLAR ki
+# _prepare_next_organism() bunları geçici olarak sıfırlayabilsin (bkz.
+# aşağı) ve _drop_current_organism() gerçek bırakma anında GERİ yükleyebilsin.
+var _pending_collision_layer: int = 1
+var _pending_collision_mask: int = 1
+
 func _ready() -> void:
+	add_to_group("spawner")  # fix: recover stalled gameplay loop -- GameplayWatchdog'un Spawner'ı sahne yoluna bağımlı olmadan bulması için
 	_prepare_next_organism()
 
 ## Cooldown süresini her karede azaltır; Bonus Sistemi zamanlayıcısını ilerletir.
@@ -59,7 +81,11 @@ func _advance_bonus_timer(delta: float) -> void:
 		return
 	_bonus_elapsed_seconds = 0.0
 	_next_bonus_threshold_seconds = randf_range(BONUS_INTERVAL_MIN_SECONDS, BONUS_INTERVAL_MAX_SECONDS)
-	if _pending_organism != null:
+	# fix: recover stalled gameplay loop -- is_instance_valid() ile: ham obje
+	# referansı freed bir node'da ASLA otomatik null olmaz (== null her zaman
+	# false döner), bu yüzden düz "!= null" kontrolü freed bir referansa
+	# yazmayı denerdi ve script hatasıyla çökerdi.
+	if is_instance_valid(_pending_organism):
 		_pending_organism.is_bonus = true
 	else:
 		_bonus_flag_ready = true
@@ -92,7 +118,11 @@ func _handle_drag(screen_position: Vector2) -> void:
 ## UC-01 Adım 2-3: Gösterilen canlıyı serbest bırakır (yerçekimine bırakır), fanusun
 ## OrganismContainer'ına taşır ve 1 saniyelik bırakma cooldown'ını başlatır.
 func _drop_current_organism() -> void:
-	if _cooldown_remaining > 0.0 or _pending_organism == null:
+	# fix: recover stalled gameplay loop -- is_instance_valid() KULLANILIR
+	# (bkz. yukarı not): freed bir _pending_organism artık burada sessizce
+	# yok sayılır, bir sonraki geçerli üretime kadar bırakma denemesi
+	# çökmeden erken çıkar.
+	if _cooldown_remaining > 0.0 or not is_instance_valid(_pending_organism):
 		return
 	var organism_container: Node = get_tree().get_first_node_in_group("organism_container")
 	if organism_container == null:
@@ -100,6 +130,20 @@ func _drop_current_organism() -> void:
 	var dropped: Organism = _pending_organism
 	_pending_organism = null
 	dropped.freeze = false
+	# fix: recover stalled gameplay loop -- KÖK NEDEN düzeltmesinin diğer
+	# yarısı: bekleyen canlının GERÇEK collision_layer/collision_mask
+	# değerleri tam bırakma anında geri yüklenir (bkz. _prepare_next_organism
+	# içindeki sıfırlama notu).
+	# fix: recover stalled gameplay loop -- set_deferred() KULLANILIR: gercek
+	# GL calisma zamaninda dogrulandi (bkz. final rapor QA notlari), bir
+	# RigidBody2D'nin collision_layer/mask'ini fizik sorgu-flush penceresi
+	# sirasinda SENKRON degistirmek Godot'un kendi motor uyarisini
+	# tetikliyordu ("Can't change this state while flushing queries. Use
+	# call_deferred() or set_deferred()..."). Fonksiyonel davranisi BOZMAZ --
+	# yalnizca degisikligi mevcut karenin sonuna erteleyerek motorun kendi
+	# ONERDIGI güvenli yolu kullanir.
+	dropped.set_deferred("collision_layer", _pending_collision_layer)
+	dropped.set_deferred("collision_mask", _pending_collision_mask)
 	dropped.visible = true  # feat: add dedicated next organism preview -- dunya-uzayinda gorunur olma ani TAM burasi
 	dropped.reparent(organism_container)
 	# feat: add drop aiming and landing feedback -- SADECE GÖRSEL giriş efekti
@@ -145,16 +189,47 @@ func _prepare_next_organism() -> void:
 	# edilene kadar dunya-uzayinda GORUNMEZ (NEXT panelinin kendi ayri
 	# TextureRect onizlemesi gorunur olani ustlenir, bkz. next_preview.gd).
 	_pending_organism.visible = false
+	# fix: recover stalled gameplay loop -- KÖK NEDEN düzeltmesi: canlı henüz
+	# bırakılmadığı sürece GERÇEK collision_layer/collision_mask'ı saklayıp
+	# sıfıra çekilir, böylece hiçbir fiziksel gövdeyle (dolayısıyla hiçbir
+	# merge'le) TEMAS EDEMEZ -- 0.15s'lik merge-arm süresinin bırakılma
+	# durumundan bağımsız işlemesinin yarattığı açığı KÖKTEN kapatır (bkz.
+	# yukarı sınıf-seviyesi not). Bırakıldığı an _drop_current_organism()
+	# bu gerçek değerleri geri yükler.
+	_pending_collision_layer = _pending_organism.collision_layer
+	_pending_collision_mask = _pending_organism.collision_mask
+	# fix: recover stalled gameplay loop -- set_deferred() (bkz. aşağı drop
+	# tarafındaki AYNI not) -- freeze=true zaten bu karede kinematik hale
+	# getirdiğinden, sıfırlamanın kare sonuna ertelenmesi güvenlidir.
+	_pending_organism.set_deferred("collision_layer", 0)
+	_pending_organism.set_deferred("collision_mask", 0)
 	add_child(_pending_organism)
 	_pending_organism.position = Vector2.ZERO
 	next_organism_ready.emit(get_pending_preview_data())
+
+## fix: recover stalled gameplay loop (Bölüm A) -- GameplayWatchdog için
+## salt-okunur durum sorgusu: bekleyen canlı referansı hâlâ geçerli mi?
+func has_valid_pending_organism() -> bool:
+	return is_instance_valid(_pending_organism)
+
+## fix: recover stalled gameplay loop (Bölüm A) -- GameplayWatchdog, üretim
+## 1.5s boyunca durduğunu (bkz. has_valid_pending_organism()==false) tespit
+## ederse bu fonksiyonu çağırır. Geçersiz/dangling referansı temizler ve
+## üretimi YENİDEN başlatır -- skor/can/mevcut canlılara HİÇBİR şekilde
+## dokunmaz, yalnızca bekleyen "sıradaki canlı" üretim zincirini onarır.
+## Zaten geçerli bir bekleyen canlı varsa (yanlış alarm) hiçbir şey yapmaz.
+func force_recover_pending_organism() -> void:
+	if is_instance_valid(_pending_organism):
+		return
+	_pending_organism = null  # dangling referansı temizle (queue_free sonrası == null olmaz, bkz. yukarı not)
+	_prepare_next_organism()
 
 ## feat: add dedicated next organism preview -- NEXT paneli icin, bekleyen
 ## canlinin gorsel kimligini (stage_id/is_bonus/is_fish_part/fish_part_index)
 ## salt-okunur bir Dictionary olarak disa verir. Fizik/collision/merge/spawn
 ## mantigina dokunmaz.
 func get_pending_preview_data() -> Dictionary:
-	if _pending_organism == null:
+	if not is_instance_valid(_pending_organism):
 		return {}
 	return {
 		"stage_id": _pending_organism.stage_id,

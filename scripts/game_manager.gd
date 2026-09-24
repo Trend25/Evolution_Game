@@ -116,3 +116,16 @@ func reset_run() -> void:
 	lives_changed.emit(lives)
 	_run_start_xp = xp  # style: apply polished HUD and run summary -- yeni turun XP başlangıcı; kalıcı xp'ye DOKUNMAZ
 	run_reset.emit()
+
+## fix: recover stalled gameplay loop (Bölüm A) -- GameplayWatchdog'un
+## "kayıp çizgisi aşıldı ama oyun hâlâ PLAYING görünüyor" yedek denetimi
+## (normal akışta lose_life() zaten lives==0 anında game_over'ı SENKRON
+## yayınlar, bkz. yukarısı -- bu fonksiyon yalnızca beklenmedik bir
+## senkronizasyon kaybına karşı ikinci bir güvenlik ağıdır). Can/skor/
+## canlılara DOKUNMAZ -- yalnızca zaten sıfırlanmış canlar için oyun sonu
+## akışını YENİDEN tetikler; oyun zaten bitmişse (get_tree().paused=true
+## veya lives>0) hiçbir şey yapmaz.
+func force_game_over_if_stuck() -> void:
+	if lives > 0 or get_tree().paused:
+		return
+	game_over.emit()
