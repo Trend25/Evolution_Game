@@ -22,6 +22,7 @@
 [ext_resource type="PackedScene" path="res://scenes/PauseScreen.tscn" id="20_pausescreen"]
 [ext_resource type="PackedScene" path="res://scenes/HowToPlayPanel.tscn" id="21_howtoplay"]
 [ext_resource type="PackedScene" path="res://scenes/SettingsPanel.tscn" id="22_settingspanel"]
+[ext_resource type="PackedScene" path="res://scenes/FirstRunTutorial.tscn" id="23_firstruntutorial"]
 [ext_resource type="Script" path="res://scripts/background_fill.gd" id="24_backgroundfill"]
 [ext_resource type="Script" path="res://scripts/environment_bounds.gd" id="25_environmentbounds"]
 
@@ -192,6 +193,9 @@ layer = 20
 
 [node name="ChainToast" parent="." instance=ExtResource("15_chaintoast")]
 layer = 20
+
+[node name="FirstRunTutorial" parent="." instance=ExtResource("23_firstruntutorial")]
+layer = 25
 
 [node name="StartScreen" parent="." instance=ExtResource("19_startscreen")]
 layer = 40

@@ -67,6 +67,14 @@ var _force_next_fish_part_index: int = -1  # -1 = bekleyen zorunlu eşleşme yok
 var _pending_collision_layer: int = 1
 var _pending_collision_mask: int = 1
 
+# feat: add first-run gameplay guidance (Bölüm D) -- ilk-çalıştırma
+# tutorial'ı açıkken Bonus Sistemi zamanlayıcısının "kontrolsüzce arka
+# planda" ilerlememesi için (kullanıcı isteği). Drop/cooldown/collision/
+# merge mantığının KENDİSİNE dokunmaz -- oyuncu tutorial açıkken de normal
+# şekilde sürükleyip bırakabilir, yalnızca görünmez bonus zamanlayıcısı
+# duraklar.
+var _tutorial_active: bool = false
+
 func _ready() -> void:
 	add_to_group("spawner")  # fix: recover stalled gameplay loop -- GameplayWatchdog'un Spawner'ı sahne yoluna bağımlı olmadan bulması için
 	_prepare_next_organism()
@@ -75,7 +83,13 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if _cooldown_remaining > 0.0:
 		_cooldown_remaining = max(0.0, _cooldown_remaining - delta)
-	_advance_bonus_timer(delta)
+	if not _tutorial_active:
+		_advance_bonus_timer(delta)
+
+## feat: add first-run gameplay guidance (Bölüm D) -- FirstRunTutorial
+## tarafından çağrılır (bkz. yukarı sınıf-seviyesi not).
+func set_tutorial_active(active: bool) -> void:
+	_tutorial_active = active
 
 ## Bonus Sistemi: Eşik süresi dolduğunda, halen bekleyen canlı varsa onu bonus
 ## olarak işaretler; yoksa bir sonraki hazırlanan canlıya uygulanmak üzere

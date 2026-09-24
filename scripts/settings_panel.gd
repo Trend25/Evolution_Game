@@ -13,6 +13,7 @@ class_name SettingsPanel
 @onready var _sound_button: Button = $Panel/SoundButton
 @onready var _haptics_caption: Label = $Panel/HapticsCaption
 @onready var _haptics_button: Button = $Panel/HapticsButton
+@onready var _tutorial_button: Button = $Panel/TutorialButton
 @onready var _back_button: Button = $Panel/BackButton
 
 func _ready() -> void:
@@ -21,6 +22,7 @@ func _ready() -> void:
 	_apply_style()
 	_sound_button.pressed.connect(_on_sound_pressed)
 	_haptics_button.pressed.connect(_on_haptics_pressed)
+	_tutorial_button.pressed.connect(_on_tutorial_pressed)  # feat: add first-run gameplay guidance
 	_back_button.pressed.connect(_on_back_pressed)
 	GameFlow.state_changed.connect(_on_state_changed)
 
@@ -43,6 +45,18 @@ func _on_haptics_pressed() -> void:
 	AudioManager.play_ui_tick()
 	_refresh_labels()
 
+## feat: add first-run gameplay guidance (Bölüm D) -- kullanıcı isteği:
+## "Ayarlardan yeniden açılabilir olmalı". İlk-çalıştırma tutorial'ını
+## kalıcı "görüldü" bayrağına DOKUNMADAN hemen yeniden gösterir (bkz.
+## first_run_tutorial.gd request_replay()). Settings'i kapatır ki oyuncu
+## tutorial'ın üzerine bindirilmiş overlay'i net görsün.
+func _on_tutorial_pressed() -> void:
+	AudioManager.play_ui_tick()
+	var tutorial: Node = get_tree().get_first_node_in_group("first_run_tutorial")
+	if tutorial != null and tutorial.has_method("request_replay"):
+		tutorial.request_replay()
+	GameFlow.close_settings()
+
 func _on_back_pressed() -> void:
 	AudioManager.play_ui_tick()
 	GameFlow.close_settings()
@@ -57,7 +71,9 @@ func _apply_style() -> void:
 	_haptics_caption.text = "HAPTICS"
 	_style_button(_sound_button)
 	_style_button(_haptics_button)
+	_style_button(_tutorial_button)
 	_style_button(_back_button)
+	_tutorial_button.text = "REPLAY TUTORIAL"
 	_back_button.text = "BACK"
 
 func _style_button(button: Button) -> void:
