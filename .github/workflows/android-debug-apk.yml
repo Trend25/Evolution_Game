@@ -13,11 +13,18 @@ name: Android Debug APK
 # same official runner-provided Android SDK build-tools (no third-party
 # tool). Artifact renamed to evrim-android-debug-v2 so it cannot be confused
 # with the v1 artifact from the previous (landscape/touch-bug) build.
+#
+# v3 (round 3): also triggers on gameplay/mobile-fun-stability-v1 (stalled-
+# production fix, mobile scale/scoring feedback, first-run tutorial).
+# Scope UNCHANGED from v2 -- still strictly debug-only, still no release
+# signing/keystore/secrets/Play Store/AAB. Artifact renamed to
+# evrim-android-debug-v3 so it cannot be confused with v1/v2.
 
 "on":
   push:
     branches:
       - release/android-export-v1
+      - gameplay/mobile-fun-stability-v1
   workflow_dispatch: {}
 
 permissions:
@@ -110,7 +117,7 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: evrim-android-debug-v2
+          name: evrim-android-debug-v3
           path: |
             builds/evrim_debug.apk
             builds/evrim_debug.apk.sha256.txt
