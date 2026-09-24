@@ -92,7 +92,7 @@ func _on_organism_dropped(_position: Vector2, _is_bonus: bool) -> void:
 func _on_drag_state_changed(is_dragging: bool) -> void:
 	_is_dragging = is_dragging
 
-func _on_organism_merged(_position: Vector2, _stage_id: int, _is_bonus: bool, _awarded_score: int, _score_awarded: bool) -> void:
+func _on_organism_merged(_position: Vector2, _stage_id: int, _is_bonus: bool, _awarded_score: int, _score_awarded: bool, _combo_count: int = 0) -> void:
 	current_state = LoopState.RESOLVING
 	# Bir sonraki _process karesinde durum PLAYER_CONTROL/SPAWNING'e doğal
 	# olarak geri döner (bkz. _process) -- burada zorla ayarlamak GEREKMEZ,

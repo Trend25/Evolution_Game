@@ -20,7 +20,11 @@ const DURATION: float = 0.58  # istenen ~0.5-0.65s araliginin ortasi
 const RING_WIDTH: float = 2.6
 const RING_EXPAND_FACTOR: float = 1.55  # halka, baslangic yaricapinin bu katina genisler
 const MIN_RING_RADIUS: float = 22.0
-const MAX_RING_RADIUS: float = 150.0    # cok buyuk organizmalarda (Memeli/T-Rex) efekt asiri devasa olmasin
+# feat: improve mobile scale and scoring feedback (Bölüm B) -- OrganismTypes
+# yeni boyut tablosunda en büyük aşama (T-Rex, id=9) radius=166.0'a çıktı
+# (eskiden 144.0); üst sınır aynı oranda büyütüldü ki en büyük evrim
+# aşamasında efekt hâlâ orantılı görünsün, eskisi gibi "kırpılmış" kalmasın.
+const MAX_RING_RADIUS: float = 180.0    # cok buyuk organizmalarda (Memeli/T-Rex) efekt asiri devasa olmasin
 const PARTICLE_COUNT_MIN: int = 6
 const PARTICLE_COUNT_MAX: int = 10
 const PARTICLE_RADIUS_MIN: float = 2.4

@@ -116,7 +116,11 @@ func _perform_fish_part_merge(other: Organism) -> void:
 	# sinyali BURADA, score_awarded=false ve awarded_score=0 ile, AYRICA
 	# yayinlanir -- aksi halde Balik tamamlaninca hicbir burst gorunmezdi.
 	# Skor/XP EKONOMISINE dokunmaz (add_merge_reward hala cagrilmiyor).
-	GameManager.organism_merged.emit(contact_point, stage_id, combined_is_bonus, 0, false)
+	# feat: improve mobile scale and scoring feedback (Bölüm C) -- combo_count
+	# sabit 0 gecilir: skor vermeyen bu birlesme GameManager'in yetkili kombo
+	# sayacini HICBIR sekilde ilerletmez/bozmaz (bkz. game_manager.gd
+	# _advance_combo, yalnizca add_merge_reward icinden cagrilir).
+	GameManager.organism_merged.emit(contact_point, stage_id, combined_is_bonus, 0, false, 0)
 
 	queue_free()
 	other.queue_free()

@@ -27,10 +27,10 @@ func _ready() -> void:
 	GameManager.game_over_ready.connect(_clear_active_effects)
 	GameManager.run_reset.connect(_clear_active_effects)
 
-func _on_organism_merged(merge_position: Vector2, stage_id: int, is_bonus: bool, awarded_score: int, score_awarded: bool) -> void:
+func _on_organism_merged(merge_position: Vector2, stage_id: int, is_bonus: bool, awarded_score: int, score_awarded: bool, combo_count: int = 1) -> void:
 	_spawn_burst(merge_position, stage_id, is_bonus)
 	if score_awarded:
-		_spawn_floating_score(merge_position, awarded_score, is_bonus)
+		_spawn_floating_score(merge_position, awarded_score, is_bonus, combo_count)
 
 ## Burst boyutu, o aşamanın GERCEK collision radius'undan (OrganismTypes)
 ## turetilir -- sabit/kopyalanmis bir boyut tablosu YOKTUR.
@@ -42,11 +42,11 @@ func _spawn_burst(world_position: Vector2, stage_id: int, is_bonus: bool) -> voi
 	burst.global_position = world_position
 	burst.play(is_bonus, stage_radius)
 
-func _spawn_floating_score(world_position: Vector2, awarded_score: int, is_bonus: bool) -> void:
+func _spawn_floating_score(world_position: Vector2, awarded_score: int, is_bonus: bool, combo_count: int = 1) -> void:
 	var text: Node2D = FloatingScoreTextScene.instantiate()
 	add_child(text)
 	text.global_position = world_position
-	text.play(awarded_score, is_bonus)
+	text.play(awarded_score, is_bonus, combo_count)
 
 ## Game Over veya Retry ("Play again") tetiklendiginde hala sahnede olan
 ## (animasyonu bitmemis) tum burst/floating-score instance'larini aninda

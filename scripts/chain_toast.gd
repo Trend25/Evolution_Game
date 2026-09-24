@@ -1,13 +1,22 @@
 extends CanvasLayer
 class_name ChainToast
-## ChainToast -- feat: add presentation-only merge chain feedback. SADECE
-## SUNUM amaclidir: skor odulu veren merge'ler ~2.25 saniye icinde art arda
-## gerceklesirse kisa sureli "CHAIN x2" / "CHAIN x3" ... kapsulu gosterir.
-## Skor/XP/spawn/bonus ihtimali/cooldown EKONOMISINE HICBIR sekilde
-## dokunmaz -- hicbir multiplier UYGULAMAZ, yalnizca
-## GameManager.organism_merged sinyalinin (score_awarded=true) ZAMANLAMASINI
-## izler. Balik parca tamamlanmasi (score_awarded=false) hem sayaci
-## ARTIRMAZ hem de mevcut zinciri BOZMAZ/SIFIRLAMAZ -- tamamen yok sayilir.
+## ChainToast -- feat: add presentation-only merge chain feedback. Skor
+## odulu veren merge'ler art arda gerceklesirse kisa sureli "CHAIN x2" /
+## "CHAIN x3" ... kapsulu gosterir.
+##
+## feat: improve mobile scale and scoring feedback (Bölüm C) -- ONEMLI
+## DEGISIKLIK: bu script ARTIK KENDI zincir sayacini/zamanlayicisini TUTMAZ.
+## Onceden (2.25s pencereli, salt KOZMETIK, "hicbir multiplier UYGULAMAZ"
+## diye belgelenmis) BAGIMSIZ bir sayaci vardi; simdi GameManager'in kendi
+## YETKILI (gercek skoru etkileyen) 1.5s kombo penceresinin urettigi
+## combo_count degerini organism_merged sinyalinden DOGRUDAN okuyup
+## GOSTERIYOR -- boylece ekranda gorunen "CHAIN xN" ile gercekte uygulanan
+## skor carpani ARTIK HER ZAMAN BIREBIR AYNI (onceden ikisi ayri ayri
+## hesaplaniyordu, farkli pencere sureleri yuzunden birbirinden SAPABILIRDI).
+## Skor/XP/spawn/bonus/cooldown EKONOMISINE hala dokunmaz -- carpani UYGULAYAN
+## taraf hala GameManager'dir, bu script sadece GOSTERIR.
+## Balik parca tamamlanmasi (score_awarded=false, combo_count=0 gecilir --
+## bkz. organism.gd) hem gosterilmez hem de mevcut kapsulu ETKILEMEZ.
 ##
 ## LevelUpToast (level_up_toast.gd) ile AYNI kapsul/tween deseni kullanilir
 ## (bu desen zaten bu projede calisir durumda kanitlanmis), ama gorsel
@@ -15,7 +24,6 @@ class_name ChainToast
 ## konumlanir -- ayni merkezi HUDRoot.compute_panel_layout() fonksiyonunu
 ## kullanir, ayri/catallanmis sabit koordinat YOK.
 
-const CHAIN_WINDOW_SECONDS: float = 2.25
 const FADE_SECONDS: float = 0.25
 const DISPLAY_SECONDS: float = 1.0
 const SLIDE_DISTANCE: float = 6.0
@@ -28,16 +36,6 @@ const CAPSULE_GAP_BELOW_HUD: float = 12.0
 
 var _active_tween: Tween = null
 var _rest_position: Vector2 = Vector2.ZERO
-var _chain_count: int = 0
-var _last_merge_ticks_ms: int = -1
-
-## feat: add start pause and how-to-play flow -- GameFlow'un menu amacli
-## (Start/Pause) duraklatmalari sirasinda gecen GERCEK ZAMANLI sureyi
-## zincir penceresi hesabindan DUSMEK icin. Zincir SAYISINA/EKONOMISINE
-## dokunmaz, yalnizca Time.get_ticks_msec() tabanli zaman OLCUMUNU pause-
-## farkinda hale getirir (bkz. _effective_now_ms() ve game_flow.gd).
-var _paused_accum_ms: int = 0
-var _pause_started_ms: int = -1
 
 func _ready() -> void:
 	_capsule.add_theme_stylebox_override("panel", HUDTheme.make_toast_capsule_stylebox())
@@ -48,7 +46,6 @@ func _ready() -> void:
 	GameManager.organism_merged.connect(_on_organism_merged)
 	GameManager.game_over_ready.connect(_on_reset_state)
 	GameManager.run_reset.connect(_on_reset_state)
-	GameFlow.pause_state_changed.connect(_on_pause_state_changed)
 
 ## ScorePanel'in yatay merkezine hizali, HUD'un hemen altinda -- HUDRoot ile
 ## AYNI merkezi compute_panel_layout()'u kullanir (LevelUpToast'un kendi
@@ -64,36 +61,16 @@ func _position_capsule() -> void:
 	_capsule.position = _rest_position
 	_capsule.size = Vector2(CAPSULE_WIDTH, CAPSULE_HEIGHT)
 
-## Yalnizca SKOR ODULU VEREN merge'lerde islenir (score_awarded=false ise --
-## balik parca tamamlanmasi -- hicbir sekilde islenmez: ne sayar ne
-## sifirlar). Chain penceresi (CHAIN_WINDOW_SECONDS) disinda gecen sure
-## varsa sayac sessizce 1'den yeniden baslar -- kapsul yalnizca count>=2
-## iken gorunur oldugundan bu, "timeout sonrasi sayac sifirlaniyor"
-## davranisidir (ayri bir Timer node'una gerek yoktur).
-func _on_organism_merged(_position: Vector2, _stage_id: int, _is_bonus: bool, _awarded_score: int, score_awarded: bool) -> void:
+## feat: improve mobile scale and scoring feedback (Bölüm C) -- combo_count
+## ARTIK GameManager._advance_combo()'dan (yetkili, 1.5s pencereli, gercek
+## skoru etkileyen sayac) DOGRUDAN GELIR -- bu script kendi sayacini
+## TUTMAZ/HESAPLAMAZ. score_awarded=false olan (Balik parca tamamlanmasi,
+## combo_count=0 ile gelir -- bkz. organism.gd) hicbir sekilde islenmez.
+func _on_organism_merged(_position: Vector2, _stage_id: int, _is_bonus: bool, _awarded_score: int, score_awarded: bool, combo_count: int = 0) -> void:
 	if not score_awarded:
 		return
-	var now_ms: int = _effective_now_ms()
-	if _last_merge_ticks_ms >= 0 and float(now_ms - _last_merge_ticks_ms) / 1000.0 <= CHAIN_WINDOW_SECONDS:
-		_chain_count += 1
-	else:
-		_chain_count = 1
-	_last_merge_ticks_ms = now_ms
-	if _chain_count >= 2:
-		_show_chain(_chain_count)
-
-## GameFlow'un menu pause'u sirasinda gecen sureyi disarida birakan
-## "efektif" zaman -- iki cagridaki (store/compare) pause araligi ayni
-## sekilde dusuldugunden aralarindaki FARK dogru kalir.
-func _effective_now_ms() -> int:
-	return Time.get_ticks_msec() - _paused_accum_ms
-
-func _on_pause_state_changed(is_paused: bool) -> void:
-	if is_paused:
-		_pause_started_ms = Time.get_ticks_msec()
-	elif _pause_started_ms >= 0:
-		_paused_accum_ms += Time.get_ticks_msec() - _pause_started_ms
-		_pause_started_ms = -1
+	if combo_count >= 2:
+		_show_chain(combo_count)
 
 func _show_chain(count: int) -> void:
 	AudioManager.play_chain(count)  # feat: add sound haptics -- SADECE ses; chain sayısı/penceresi hesabına dokunmaz, zaten alınmış karar sese çevrilir
@@ -122,7 +99,3 @@ func _on_reset_state(_final_stats: Dictionary = {}) -> void:
 	if _active_tween != null and _active_tween.is_valid():
 		_active_tween.kill()
 	_capsule.modulate.a = 0.0
-	_chain_count = 0
-	_last_merge_ticks_ms = -1
-	_paused_accum_ms = 0
-	_pause_started_ms = -1

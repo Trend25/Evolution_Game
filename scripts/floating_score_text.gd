@@ -31,8 +31,17 @@ func _ready() -> void:
 
 ## awarded_score: GameManager.add_merge_reward'in ZATEN hesapladigi gercek
 ## deger -- bu fonksiyon skoru yeniden HESAPLAMAZ, yalnizca GOSTERIR.
-func play(awarded_score: int, is_bonus: bool) -> void:
-	_score_label.text = "+%s" % HUDTheme.format_thousands(awarded_score)
+## feat: improve mobile scale and scoring feedback (Bölüm C) -- combo_count:
+## GameManager._advance_combo()'nun ZATEN hesapladigi, GERCEK skoru etkileyen
+## yetkili zincir sayisi (1 = kombo yok). 2+ ise ana etikete " ×N" eklenir
+## (kullanici ornegi: "+140 x2") -- ayri bir kombo carpani BURADA yeniden
+## HESAPLANMAZ, yalnizca GameManager'in zaten uyguladigi carpanin SONUCU olan
+## awarded_score ile birlikte GOSTERILIR.
+func play(awarded_score: int, is_bonus: bool, combo_count: int = 1) -> void:
+	var score_text: String = "+%s" % HUDTheme.format_thousands(awarded_score)
+	if combo_count >= 2:
+		score_text += " ×%d" % combo_count
+	_score_label.text = score_text
 	_score_label.add_theme_color_override("font_color", HUDTheme.GOLD_ACCENT if is_bonus else HUDTheme.TEXT_PRIMARY)
 	if is_bonus:
 		_bonus_label.text = "BONUS ×%d" % int(GameManager.BONUS_ORGANISM_SCORE_MULTIPLIER)

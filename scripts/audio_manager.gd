@@ -168,12 +168,21 @@ func play_drop() -> void:
 	_play("drop")
 	_haptic("drop", HAPTIC_DROP_MS)
 
-## GameManager.organism_merged(position, merged_stage_id, is_bonus, awarded_score, score_awarded)
+## GameManager.organism_merged(position, merged_stage_id, is_bonus, awarded_score, score_awarded, combo_count)
 ## score_awarded=true  -> gerçek evrim/tier-büyüme merge'i (normal veya bonus)
 ## score_awarded=false -> YALNIZCA Balık parça tamamlanması (bkz. organism.gd
 ##                         _perform_fish_part_merge) -- merge sesi DEĞİL, ayrı
 ##                         bir "fish complete" sesi çalar.
-func _on_organism_merged(_position: Vector2, merged_stage_id: int, is_bonus: bool, _awarded_score: int, score_awarded: bool) -> void:
+## feat: improve mobile scale and scoring feedback (Bölüm C) -- imza,
+## GameManager'in YENİ 6-parametreli organism_merged sinyaliyle (combo_count
+## eklendi) eslesecek sekilde guncellendi. Godot sinyal->Callable
+## baglantilari EKSIK parametreli dinleyicileri KABUL ETMEZ (fazla arguman
+## sessizce yok sayilmaz, "Method expected N argument(s)" hatasi verir --
+## gercek GL calisma zamaninda bu script BURADA bulundu ve duzeltildi).
+## combo_count bu script tarafindan KULLANILMAZ (ses/haptic secimi zaten
+## merged_stage_id/is_bonus'a gore yapiliyor) -- yalnizca cagri uyumluluğu
+## icin kabul edilir.
+func _on_organism_merged(_position: Vector2, merged_stage_id: int, is_bonus: bool, _awarded_score: int, score_awarded: bool, _combo_count: int = 0) -> void:
 	if GameFlow.current_state != GameFlow.State.PLAYING:
 		return
 	if not score_awarded:

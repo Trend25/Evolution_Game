@@ -5,7 +5,12 @@ class_name Spawner
 ## süresi (cooldown) uygular.
 
 const DROP_COOLDOWN_SECONDS: float = 1.0    # UC-01 Adım 3: Spam koruması
-const HORIZONTAL_MARGIN: float = 40.0       # Canlının fanus duvarlarına gömülmesini engelleyen kenar payı
+# feat: improve mobile scale and scoring feedback (Bölüm B) -- en büyük
+# üretilebilir aşama (MAX_SPAWNABLE_STAGE_ID=4, Kurbağa) yeni boyut
+# tablosunda radius=60.0'a çıktığından, pay da bu yarıçapı (+ küçük bir
+# tampon) karşılayacak şekilde büyütüldü; aksi halde en büyük üretilebilir
+# canlı sürüklemenin uç noktalarında fanus duvarına gömülürdü.
+const HORIZONTAL_MARGIN: float = 65.0       # Canlının fanus duvarlarına gömülmesini engelleyen kenar payı
 const ORGANISM_SCENE: PackedScene = preload("res://scenes/Organism.tscn")
 
 # Bonus Sistemi (kullanıcı isteği): belirli aralıklarla bir sonraki bırakılacak
@@ -151,6 +156,12 @@ func _drop_current_organism() -> void:
 	# is_bonus'u dışarı taşır.
 	organism_dropped.emit(dropped.global_position, dropped.is_bonus)
 	AudioManager.play_drop()  # feat: add sound haptics -- SADECE ses/haptic; drop/cooldown/spawn/bonus mantığına dokunmaz
+	# feat: improve mobile scale and scoring feedback (Bölüm C) -- yeni
+	# merkezi ekonomi: her BAŞARILI bırakma sabit +5 puan verir (mevcut
+	# "tek tek yavaş +1" hissini gidermek için, kullanıcı isteği). Bu
+	# skor merge ekonomisinden TAMAMEN ayrıdır -- GameManager.add_merge_reward
+	# ÇAĞRILMAZ, kombo/bonus çarpanı UYGULANMAZ.
+	GameManager.add_drop_reward()
 	_cooldown_remaining = DROP_COOLDOWN_SECONDS
 	_prepare_next_organism()
 

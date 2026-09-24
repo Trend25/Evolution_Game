@@ -40,12 +40,26 @@ static func get_margins() -> Dictionary:
 	if safe_rect.position == Vector2i.ZERO and safe_rect.size == screen_full:
 		return margins  # Çentik yok / API bu platformda anlamlı değil -- yine minimum fallback uygulanır
 
-	var logical_size := Vector2(
-		float(ProjectSettings.get_setting("display/window/size/viewport_width", 720)),
-		float(ProjectSettings.get_setting("display/window/size/viewport_height", 1280)),
-	)
-	# canvas_items + aspect=keep: içerik, pencereye SIĞDIRILARAK (letterbox ile)
-	# tek bir oranla büyütülür -- bu yüzden iki eksenin KÜÇÜK olanı gerçek ölçek.
+	# feat: mobile edge-to-edge layout fix (Bölüm E) -- window/stretch/aspect
+	# artık "expand" (eskiden "keep", bkz. project.godot notu). "keep"
+	# modunda mantıksal boyut HER ZAMAN sabit proje ayarıydı (720x1280) ve
+	# pencereye letterbox ile sığdırılıyordu -- iki eksenin KÜÇÜK olanı
+	# gerçek ölçekti. "expand" modunda ise mantıksal viewport'un KENDİSİ
+	# pencere en-boy oranına göre bir eksende BÜYÜYOR (gerçek Godot 4.7.2
+	# kaynağı incelenerek doğrulandı, bkz. background_fill.gd/final rapor) --
+	# bu yüzden SABİT proje ayarı yerine motorun O ANKİ GERÇEK mantıksal
+	# viewport boyutu okunur (get_visible_rect().size, content_scale_mode=
+	# CANVAS_ITEMS altında kök Viewport'un STRETCH SONRASI mantıksal
+	# boyutudur) -- "expand" sonrası iki eksenin oranı pencereyle TAM
+	# eşleştiğinden, ölçek hangi eksenden hesaplanırsa hesaplansın AYNIDIR
+	# (yine de min() ile alınır, "keep" formülüyle birebir aynı KOD yolu
+	# korunur, yalnızca logical_size'ın KAYNAĞI değişti).
+	var main_loop: SceneTree = Engine.get_main_loop() as SceneTree
+	if main_loop == null or main_loop.root == null:
+		return margins
+	var logical_size: Vector2 = main_loop.root.get_visible_rect().size
+	if logical_size.x <= 0.0 or logical_size.y <= 0.0:
+		return margins
 	var scale: float = min(float(window_px.x) / logical_size.x, float(window_px.y) / logical_size.y)
 	if scale <= 0.0:
 		return margins
