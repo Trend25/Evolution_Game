@@ -15,7 +15,6 @@ name: Android Debug APK
 # with the v1 artifact from the previous (landscape/touch-bug) build.
 #
 # v3 (round 3): also triggers on gameplay/mobile-fun-stability-v1 (stalled-
-      - gameplay/core-loop-v4
 # production fix, mobile scale/scoring feedback, first-run tutorial).
 # Scope UNCHANGED from v2 -- still strictly debug-only, still no release
 # signing/keystore/secrets/Play Store/AAB. Artifact renamed to
