@@ -40,13 +40,36 @@ const STALL_PRODUCTION_SECONDS: float = 1.5
 const STUCK_ORGANISM_SECONDS: float = 2.5
 
 # Fanus/ekran sınırları (Main.tscn: WallLeft x=10 WallRight x=710, genişlik
-# 20 -- iç yüzler x=20/x=700; Floor y=1270, GameOverZone y=200'ün ÇOK
-# üzerinde bir tampon). Bu sınırların BELİRGİN şekilde dışına taşan bir
-# canlı "ekran dışına düşmüş/takılmış" sayılır.
+# 20 -- iç yüzler x=20/x=700; GameOverZone y=200'ün ÇOK üzerinde bir tampon).
+# Bu sınırların BELİRGİN şekilde dışına taşan bir canlı "ekran dışına
+# düşmüş/takılmış" sayılır.
 const STAGE_LEFT_X: float = -60.0
 const STAGE_RIGHT_X: float = 780.0
 const STAGE_TOP_Y: float = -300.0
-const STAGE_BOTTOM_Y: float = 1500.0
+# DÜZELTME (V02 düzeltme turu -- KÖK NEDEN bulgusu, kullanıcı: "daha dikkatli
+# olmalısın"): bu sabit eskiden Floor y≈1270 varsayımıyla (eski MAX_PLAY_HEIGHT
+# =1000 döneminden) 1500 olarak SABİT KODLANMIŞTI. "Zemini alt safe-area'ya
+# yaklaştır" düzeltmesiyle MAX_PLAY_HEIGHT 1000->1620'ye çıkınca (bkz.
+# graybox_config.gd) taban artık y≈1610'a taşındı -- yani tabanda DURAN,
+# TAMAMEN normal bir canlı bile bu eski sabitin (1500) ÜZERİNDE kalıp
+# yanlışlıkla "ekran dışı" sayılıyor, 2.5s sonra GEREKSİZ YERE fanus
+## ortasına ışınlanıyordu (gerçek GL QA'sında GAMEPLAY_WATCHDOG_RECOVERY
+## reason=stuck_organism logu ile YAKALANDI). Artık STATİK değil -- GERÇEK
+## taban konumundan (Environment/Floor, environment_bounds.gd'nin ZATEN
+## GÜNCEL tuttuğu TEK kaynak) çalışma zamanında OKUNUP altına bir tampon
+## eklenir; Floor bulunamazsa (ör. çok erken kare) eski sabit (1500) GÜVENLİ
+## bir alt sınır olarak kalır.
+const STAGE_BOTTOM_Y_FALLBACK: float = 1500.0
+const STAGE_BOTTOM_MARGIN: float = 220.0  # tabanın altına, "belirgin şekilde dışarı taştı" diyebilmek için makul bir tampon
+
+## GERÇEK taban (Environment/Floor) konumundan türetilen dinamik alt sınır --
+## bkz. yukarı STAGE_BOTTOM_Y_FALLBACK notu. Salt-okunur: Floor'un KENDİ
+## konumlandırma mantığına (environment_bounds.gd) HİÇ dokunmaz/yazmaz.
+func _current_stage_bottom_y() -> float:
+	var floor_node: Node2D = get_tree().root.get_node_or_null("Main/Environment/Floor")
+	if floor_node == null:
+		return STAGE_BOTTOM_Y_FALLBACK
+	return floor_node.position.y + STAGE_BOTTOM_MARGIN
 
 var current_state: int = LoopState.IDLE
 
@@ -86,7 +109,13 @@ func _on_next_organism_ready(_preview_data: Dictionary) -> void:
 	current_state = LoopState.PLAYER_CONTROL
 	_no_pending_elapsed = 0.0
 
-func _on_organism_dropped(_position: Vector2, _is_bonus: bool) -> void:
+## gameplay/core-loop-v4 "Evrim Laboratuvarı" (ışık-transfer efekti): sinyale
+## 3. bir parametre (dropped organism referansı) eklendi -- Godot sinyal->
+## Callable bağlantıları eksik parametreli dinleyicileri KABUL ETMEDİĞİNDEN
+## (bkz. audio_manager.gd _on_organism_merged notu -- gerçek GL çalışma
+## zamanında doğrulanmış aynı kısıt) burada da imza güncellendi. Bu watchdog
+## organizma referansını KULLANMAZ, yalnızca çağrı uyumluluğu için kabul eder.
+func _on_organism_dropped(_position: Vector2, _is_bonus: bool, _organism: Node = null) -> void:
 	current_state = LoopState.FALLING
 
 func _on_drag_state_changed(is_dragging: bool) -> void:
@@ -158,6 +187,7 @@ func _check_stuck_organisms(elapsed: float) -> void:
 	var container: Node = get_tree().get_first_node_in_group("organism_container")
 	if container == null:
 		return
+	var stage_bottom_y: float = _current_stage_bottom_y()
 	var live_ids: Dictionary = {}
 	for child in container.get_children():
 		if not is_instance_valid(child) or not (child is Organism):
@@ -166,7 +196,7 @@ func _check_stuck_organisms(elapsed: float) -> void:
 		var id: int = organism.get_instance_id()
 		live_ids[id] = true
 		var pos: Vector2 = organism.global_position
-		var off_screen: bool = pos.x < STAGE_LEFT_X or pos.x > STAGE_RIGHT_X or pos.y < STAGE_TOP_Y or pos.y > STAGE_BOTTOM_Y
+		var off_screen: bool = pos.x < STAGE_LEFT_X or pos.x > STAGE_RIGHT_X or pos.y < STAGE_TOP_Y or pos.y > stage_bottom_y
 		if not off_screen:
 			_stuck_elapsed.erase(id)
 			continue
@@ -175,7 +205,7 @@ func _check_stuck_organisms(elapsed: float) -> void:
 			_stuck_elapsed.erase(id)
 			var recovered_pos: Vector2 = Vector2(
 				clamp(pos.x, STAGE_LEFT_X + 100.0, STAGE_RIGHT_X - 100.0),
-				clamp(pos.y, STAGE_TOP_Y + 100.0, STAGE_BOTTOM_Y - 200.0)
+				clamp(pos.y, STAGE_TOP_Y + 100.0, stage_bottom_y - 200.0)
 			)
 			organism.global_position = recovered_pos
 			organism.linear_velocity = Vector2.ZERO

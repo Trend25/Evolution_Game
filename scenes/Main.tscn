@@ -25,6 +25,12 @@
 [ext_resource type="PackedScene" path="res://scenes/FirstRunTutorial.tscn" id="23_firstruntutorial"]
 [ext_resource type="Script" path="res://scripts/background_fill.gd" id="24_backgroundfill"]
 [ext_resource type="Script" path="res://scripts/environment_bounds.gd" id="25_environmentbounds"]
+[ext_resource type="Script" path="res://scripts/bioreactor_ambience.gd" id="26_bioreactorambience"]
+[ext_resource type="Script" path="res://scripts/dna_gauge.gd" id="27_dnagauge"]
+[ext_resource type="Script" path="res://scripts/collection_strip.gd" id="28_collectionstrip"]
+[ext_resource type="PackedScene" path="res://scenes/NewLifeToast.tscn" id="29_newlifetoast"]
+[ext_resource type="Script" path="res://scripts/mutasyon_manager.gd" id="30_mutasyonmanager"]
+[ext_resource type="Script" path="res://scripts/dna_portal.gd" id="31_dnaportal"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_left"]
 size = Vector2(20, 1280)
@@ -53,6 +59,9 @@ z_index = -10
 position = Vector2(360, 640)
 texture = ExtResource("10_bgplayfieldv3")
 script = ExtResource("24_backgroundfill")
+
+[node name="BioreactorAmbience" type="Node2D" parent="."]
+script = ExtResource("26_bioreactorambience")
 
 [node name="Environment" type="Node2D" parent="."]
 script = ExtResource("25_environmentbounds")
@@ -91,6 +100,9 @@ right_bound_x = 690.0
 [node name="DropAimGuide" type="Node2D" parent="Spawner"]
 script = ExtResource("16_dropaimguide")
 
+[node name="DnaPortal" type="Node2D" parent="Spawner"]
+script = ExtResource("31_dnaportal")
+
 [node name="OrganismContainer" type="Node" parent="." groups=["organism_container"]]
 
 [node name="EffectsLayer" type="Node2D" parent="."]
@@ -98,6 +110,9 @@ script = ExtResource("14_mergefeedback")
 
 [node name="DropFeedbackManager" type="Node2D" parent="."]
 script = ExtResource("17_dropfeedback")
+
+[node name="MutasyonManager" type="Node" parent="."]
+script = ExtResource("30_mutasyonmanager")
 
 [node name="UI_Canvas" type="CanvasLayer" parent="."]
 layer = 10
@@ -123,6 +138,12 @@ script = ExtResource("12_levellabel")
 
 [node name="XPBar" type="Node2D" parent="UI_Canvas/HUDRoot/LeftPanel"]
 script = ExtResource("7_xpbar")
+
+[node name="DnaGauge" type="Node2D" parent="UI_Canvas/HUDRoot/LeftPanel"]
+script = ExtResource("27_dnagauge")
+
+[node name="CollectionStrip" type="Node2D" parent="UI_Canvas/HUDRoot/LeftPanel"]
+script = ExtResource("28_collectionstrip")
 
 [node name="NextPanel" type="Panel" parent="UI_Canvas/HUDRoot"]
 mouse_filter = 2
@@ -192,6 +213,8 @@ layer = 30
 layer = 20
 
 [node name="ChainToast" parent="." instance=ExtResource("15_chaintoast")]
+
+[node name="NewLifeToast" parent="." instance=ExtResource("29_newlifetoast")]
 layer = 20
 
 [node name="FirstRunTutorial" parent="." instance=ExtResource("23_firstruntutorial")]

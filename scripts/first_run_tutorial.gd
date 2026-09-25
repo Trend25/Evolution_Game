@@ -31,6 +31,18 @@ class_name FirstRunTutorial
 ## collision/merge mantığının KENDİSİNE dokunulmaz, oyuncu normal şekilde
 ## oynayabilir.
 
+# DÜZELTME (V02 İKİNCİ düzeltme turu -- kullanıcı madde 5: "Skor yazısı,
+# öğretici mesaj ve canlılar birbirinin üzerine binmemeli"): KÖK NEDEN --
+# FirstRunTutorial.tscn'deki Panel eskiden y=300-400 (dünya/logical uzayında)
+# konumluydu; bu değer, aynı turun BAŞKA bir düzeltmesiyle (drop_aim_guide.gd
+# AIM_GHOST_Y_OFFSET'in 90'dan 240'a taşınması -- portal/hayalet üst üste
+# binmesini gidermek için) artık hayalet canlının (dünya y≈340, Spawner y=100
+# + AIM_GHOST_Y_OFFSET) TAM ÜSTÜNE biniyordu -- oyuncu tam da bu panelin
+# "Canlıyı sürükle ve bırak" talimatını UYGULARKEN hayalet canlı panelin
+# içinde çiziliyordu. Panel artık (bkz. FirstRunTutorial.tscn, offset_top/
+# offset_bottom=460/560) hayaletin en geniş olası yarıçapının (Virüs, tek
+# spawn edilebilir aşama -- OrganismTypes.MAX_SPAWNABLE_STAGE_ID=0) altında,
+# güvenli bir boşlukla duruyor.
 const SAVE_PATH: String = "user://tutorial.cfg"
 const STEPS: Array[String] = [
 	"Canlıyı sürükle ve bırak",

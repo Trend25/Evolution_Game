@@ -22,10 +22,34 @@ const DURATION: float = FADE_IN_DURATION + HOLD_DELAY + FADE_OUT_DURATION  # ~0.
 @onready var _score_label: Label = $ScoreLabel
 @onready var _bonus_label: Label = $BonusLabel
 
+# DÜZELTME (V02 düzeltme turu -- kullanıcı: "Skor patlamalarını daha büyük,
+# kontrastlı ve birleşme noktasına bağlı göster"): konum zaten merge
+# noktasına bağlıydı (bkz. merge_feedback_manager.gd _spawn_floating_score
+# -- world_position=merge_position, DEĞİŞMEDİ). Burada SADECE boyut/kontrast
+# büyütüldü -- yalnızca lab modunda (üretim/graybox=false görünümü aynı
+# kalır, kullanıcının onayladığı mevcut ekranlara dokunulmaz).
+const LAB_SCORE_FONT_SIZE: int = 30      # üretim: 22
+const PRODUCTION_SCORE_FONT_SIZE: int = 22
+const LAB_BONUS_FONT_SIZE: int = 14      # üretim: 12
+const PRODUCTION_BONUS_FONT_SIZE: int = 12
+const OUTLINE_SIZE: int = 5
+const OUTLINE_COLOR: Color = Color(0.02, 0.05, 0.05, 0.9)
+
 func _ready() -> void:
 	z_index = 6  # MergeBurst'un (z_index=5) her zaman USTUNDE -- sayi halkanin/parcaciklarin altinda kalmasin
-	HUDTheme.style_label(_score_label, HUDTheme.FONT_NUMBER, 22, HUDTheme.TEXT_PRIMARY)
-	HUDTheme.style_label(_bonus_label, HUDTheme.make_spaced_variation(HUDTheme.FONT_UI, 1), 12, HUDTheme.GOLD_ACCENT)
+	var lab_mode: bool = GrayboxConfig.ENABLED and GrayboxConfig.LAB_VISUALS_ENABLED
+	var score_size: int = LAB_SCORE_FONT_SIZE if lab_mode else PRODUCTION_SCORE_FONT_SIZE
+	var bonus_size: int = LAB_BONUS_FONT_SIZE if lab_mode else PRODUCTION_BONUS_FONT_SIZE
+	HUDTheme.style_label(_score_label, HUDTheme.FONT_NUMBER, score_size, HUDTheme.TEXT_PRIMARY)
+	HUDTheme.style_label(_bonus_label, HUDTheme.make_spaced_variation(HUDTheme.FONT_UI, 1), bonus_size, HUDTheme.GOLD_ACCENT)
+	if lab_mode:
+		# style_label outline parametresi desteklemediğinden doğrudan Label
+		# theme override'ları ile eklenir -- koyu ince dış hat, açık/parlak
+		# metnin (TEXT_PRIMARY/GOLD_ACCENT) her arka plan tonunda net okunmasını sağlar.
+		_score_label.add_theme_color_override("font_outline_color", OUTLINE_COLOR)
+		_score_label.add_theme_constant_override("outline_size", OUTLINE_SIZE)
+		_bonus_label.add_theme_color_override("font_outline_color", OUTLINE_COLOR)
+		_bonus_label.add_theme_constant_override("outline_size", OUTLINE_SIZE - 2)
 	_bonus_label.visible = false
 	modulate.a = 0.0
 

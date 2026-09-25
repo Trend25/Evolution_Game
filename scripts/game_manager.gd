@@ -60,6 +60,14 @@ signal run_reset                              # Main.gd: yeni tur başında fanu
 signal level_changed(new_level: int)          # UI/UX rolü: XPBar için
 signal level_up(new_level: int, unlocked_reward_id: String)  # UI/UX rolü: "Seviye Atladın!" bildirimi için
 
+# gameplay/core-loop-v4 "Evrim Laboratuvarı" vertical slice (2026-09-24) --
+# Mutasyon: her DNA_REQUIRED_MERGES gerçek evrim (stage-up) merge'inde
+# göstergesi dolar, oyuncu iki karttan (Manyetik Alan / Katalizör) birini
+# SEÇEREK tetikler -- otomatik ASLA tetiklenmez (bkz. mutation_sheet.gd).
+signal dna_progress_changed(current: int, required: int)  # UI/UX: HUD DNA göstergesi için
+signal dna_ready                                          # mutation_sheet.gd: kartları göster
+signal new_life_discovered(stage_id: int, stage_name: String, is_first_ever: bool)  # UI/UX: "Yeni Yaşam: X" bildirimi + koleksiyon ışığı için
+
 var score: int = 0
 var xp: int = 0
 var lives: int = MAX_LIVES
@@ -72,6 +80,26 @@ var unlocked_rewards: Array[String] = []  # UC-05 Adım 3: açılan kozmetik öd
 # xp hâlâ reset_run()'da SIFIRLANMAZ) dokunmaz; yalnızca xp'nin turun
 # BAŞINDAKİ değerini saklar ki final_stats bir fark hesaplayabilsin.
 var _run_start_xp: int = 0
+
+# gameplay/core-loop-v4 "Evrim Laboratuvarı" vertical slice -- Mutasyon DNA
+# göstergesi (0..GrayboxConfig.DNA_REQUIRED_MERGES). is_dna_ready() true olunca
+# YENİDEN dolmaz (tavanda kilitli kalır) ta ki mutation_sheet.gd bir kart
+# seçimini consume_dna() ile TÜKETENE kadar -- otomatik/arka planda ASLA
+## sıfırlanmaz.
+var dna_progress: int = 0
+
+## QA/video kaydı kolaylığı (kullanıcı talebi -- "ayrı bir demo flag ile
+## enerji 4/5 başlatılabilir"): normal oyunda false, QA script'i reset_run()
+## ÇAĞRILMADAN ÖNCE bunu true yapıp bırakabilir -- reset_run() SADECE bu
+## bayrak true iken göstergeyi 4/5'ten başlatır (üretim/varsayılan davranışı
+## DEĞİŞTİRMEZ, bkz. reset_run).
+var dna_qa_demo_start_at_4: bool = false
+
+# gameplay/core-loop-v4 "Evrim Laboratuvarı" vertical slice -- bu TUR içinde
+# ilk kez üretilen (evrimle ya da Katalizör'le) her stage_id burada işaretlenir
+# ki new_life_discovered "gerçekten ilk keşif mi" bilgisini taşıyabilsin (HUD
+# koleksiyon şeridi + toast'ın kısa/uzun süresi bunu kullanır).
+var discovered_stage_ids: Dictionary = {}  # stage_id(int) -> true
 
 # feat: improve mobile scale and scoring feedback (Bölüm C) -- 1.5s'lik
 # kombo penceresinin GERÇEK ZAMANLI (menü Pause'u hariç tutan) takibi.
@@ -158,6 +186,45 @@ func add_merge_reward(stage_id: int, merge_position: Vector2, is_bonus: bool = f
 	xp_changed.emit(xp)
 	organism_merged.emit(merge_position, stage_id, is_bonus, awarded_score, true, combo_count)  # score_awarded=true -- bu fonksiyon zaten yalnizca gercek bir odul verildiginde calisir
 	_check_level_up()
+	_advance_dna()
+	_announce_new_life(reward_stage_id)
+
+## gameplay/core-loop-v4 "Evrim Laboratuvarı" vertical slice -- HER gerçek
+## evrim (stage-up) merge'i (normal ya da Katalizör'ün tek-canlı yükseltmesi
+## -- ikisi de bu fonksiyona uğrar) DNA göstergesini bir birim ilerletir.
+## DNA_REQUIRED_MERGES'e ULAŞINCA orada KİLİTLENİR (tavanı aşmaz) ve
+## dna_ready SADECE eşiğe TAM basıldığı anda bir kez yayınlanır -- göstergesi
+## zaten dolu kalırsa (kart henüz seçilmediyse) her yeni merge'de tekrar tekrar
+## sinyal yağmuruna yol açmaz (bkz. mutation_sheet.gd consume_dna()).
+func _advance_dna() -> void:
+	var required: int = GrayboxConfig.DNA_REQUIRED_MERGES
+	if dna_progress >= required:
+		return
+	dna_progress += 1
+	dna_progress_changed.emit(dna_progress, required)
+	if dna_progress >= required:
+		dna_ready.emit()
+
+## mutation_sheet.gd: oyuncu bir kart SEÇTİĞİNDE (ya da Vazgeç ile kapattığında
+## DEĞİL) göstergeyi tüketir/sıfırlar. Otomatik/arka planda hiçbir yerden
+## çağrılmaz -- Mutasyon'un "asla otomatik tetiklenmez" kuralı burada
+## garanti edilir.
+func consume_dna() -> void:
+	dna_progress = 0
+	dna_progress_changed.emit(dna_progress, GrayboxConfig.DNA_REQUIRED_MERGES)
+
+func is_dna_ready() -> bool:
+	return dna_progress >= GrayboxConfig.DNA_REQUIRED_MERGES
+
+## "Yeni Yaşam: X" bildirimi (new_life_toast.gd) + evrim koleksiyonu (HUD
+## şeridi) için: bu TURDA ilk kez mi üretildiğini işaretleyip dışarı bildirir.
+func _announce_new_life(reward_stage_id: int) -> void:
+	var stage: Dictionary = OrganismTypes.get_stage(reward_stage_id)
+	if stage.is_empty():
+		return
+	var is_first_ever: bool = not discovered_stage_ids.has(reward_stage_id)
+	discovered_stage_ids[reward_stage_id] = true
+	new_life_discovered.emit(reward_stage_id, String(stage.get("name", "?")), is_first_ever)
 
 ## UC-05 Adım 2-3: XP eşiği aşıldıkça seviyeyi artırır (tek merge'te birden
 ## fazla eşik aşılabileceğinden while ile), her seviyede bir kozmetik ödül
@@ -214,6 +281,14 @@ func reset_run() -> void:
 	_last_combo_merge_ticks_ms = -1
 	_paused_accum_ms = 0
 	_pause_started_ms = -1
+	# gameplay/core-loop-v4 "Evrim Laboratuvarı" vertical slice -- yeni tur
+	# DNA/koleksiyon durumunu sıfırlar (skorla aynı "bu tur" kapsamı). QA/video
+	# kolaylığı: dna_qa_demo_start_at_4 (varsayılan false, üretim davranışını
+	# DEĞİŞTİRMEZ) true ise gösterge 4/5'ten başlar -- Mutasyon kartlarının
+	# kayıt için sadece bir merge sonra hazır olması için.
+	discovered_stage_ids.clear()
+	dna_progress = (GrayboxConfig.DNA_REQUIRED_MERGES - 1) if dna_qa_demo_start_at_4 else 0
+	dna_progress_changed.emit(dna_progress, GrayboxConfig.DNA_REQUIRED_MERGES)
 	run_reset.emit()
 
 ## fix: recover stalled gameplay loop (Bölüm A) -- GameplayWatchdog'un

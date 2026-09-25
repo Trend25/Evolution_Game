@@ -21,6 +21,7 @@ class_name MergeFeedbackManager
 
 const MergeBurstScene: PackedScene = preload("res://scenes/MergeBurst.tscn")
 const FloatingScoreTextScene: PackedScene = preload("res://scenes/FloatingScoreText.tscn")
+const EvolutionBurstScript: GDScript = preload("res://scripts/evolution_burst.gd")
 
 func _ready() -> void:
 	GameManager.organism_merged.connect(_on_organism_merged)
@@ -29,18 +30,47 @@ func _ready() -> void:
 
 func _on_organism_merged(merge_position: Vector2, stage_id: int, is_bonus: bool, awarded_score: int, score_awarded: bool, combo_count: int = 1) -> void:
 	_spawn_burst(merge_position, stage_id, is_bonus)
+	_maybe_spawn_evolution_burst(merge_position, stage_id, is_bonus)
 	if score_awarded:
 		_spawn_floating_score(merge_position, awarded_score, is_bonus, combo_count)
 
-## Burst boyutu, o aşamanın GERCEK collision radius'undan (OrganismTypes)
-## turetilir -- sabit/kopyalanmis bir boyut tablosu YOKTUR.
+## Burst boyutu, o aşamanın GERCEK collision radius'undan (GrayboxConfig.
+## effective_radius -- ENABLED=false iken OrganismTypes ile BİREBİR aynı
+## değer, ENABLED iken organism.gd'nin collision shape'i için kullandığı
+## AYNI büyütülmüş yarıçap) turetilir -- sabit/kopyalanmis bir boyut tablosu
+## YOKTUR. DÜZELTME (görsel-collision uyumu): burst artık graybox modunda
+## GERÇEKTEN büyümüş organizmanın boyutuyla eşleşir.
 func _spawn_burst(world_position: Vector2, stage_id: int, is_bonus: bool) -> void:
-	var stage: Dictionary = OrganismTypes.get_stage(stage_id)
-	var stage_radius: float = float(stage.get("radius", 24.0))
+	var stage_radius: float = GrayboxConfig.effective_radius(stage_id)
 	var burst: Node2D = MergeBurstScene.instantiate()
 	add_child(burst)
 	burst.global_position = world_position
 	burst.play(is_bonus, stage_radius)
+
+## gameplay/core-loop-v4 V02 İKİNCİ düzeltme turu (madde 4 -- "birleşme anını
+## ödül haline getir: ... kısa DNA sarmalı → ışık patlaması → yeni canlının
+## pop animasyonu"): SADECE bu merge GERÇEKTEN bir üst aşamaya evrim
+## ürettiğinde (stage_id < VERTICAL_SLICE_FINAL_STAGE_ID -- organism.gd
+## _perform_merge'deki AYNI koşul) ek bir DNA-sarmalı+ışık-patlaması efekti
+## oynatılır. Bu dilimde son aşama (2 Tek Hücreli + 2 Tek Hücreli) evrilmez,
+## sadece ödül verir (bkz. organism.gd _perform_merge yorumu) -- o durumda
+## burada ATLANIR, normal _spawn_burst() (yukarıda zaten çağrıldı) tek başına
+## yeterli kalır. SADECE lab modunda (GrayboxConfig.LAB_VISUALS_ENABLED) --
+## üretim/graybox görsel davranışını etkilemez. Hedef renk/yarıçap YENİ
+## (henüz sahneye eklenmemiş) aşamadan -- collision/spawn mantığına dokunmaz,
+## yalnızca GrayboxConfig.STAGE_COLORS/effective_radius'u OKUR.
+func _maybe_spawn_evolution_burst(world_position: Vector2, stage_id: int, is_bonus: bool) -> void:
+	if not (GrayboxConfig.ENABLED and GrayboxConfig.LAB_VISUALS_ENABLED):
+		return
+	if stage_id >= OrganismTypes.VERTICAL_SLICE_FINAL_STAGE_ID:
+		return
+	var next_stage_id: int = stage_id + 1
+	var target_color: Color = GrayboxConfig.STAGE_COLORS.get(next_stage_id, Color.WHITE)
+	var target_radius: float = GrayboxConfig.effective_radius(next_stage_id)
+	var burst := Node2D.new()
+	burst.set_script(EvolutionBurstScript)
+	add_child(burst)
+	burst.start(world_position, target_radius, target_color, is_bonus)
 
 func _spawn_floating_score(world_position: Vector2, awarded_score: int, is_bonus: bool, combo_count: int = 1) -> void:
 	var text: Node2D = FloatingScoreTextScene.instantiate()

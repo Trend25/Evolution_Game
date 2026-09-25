@@ -13,7 +13,6 @@ class_name PauseButton
 ## durumunda bu düğme zaten gizli ve tıklanamaz.
 
 const LOGICAL_WIDTH: float = 720.0   # Main.tscn/hud_root.gd'nin ZATEN varsaydığı sabit mantıksal genişlik
-const LOGICAL_HEIGHT: float = 1280.0
 const BUTTON_SIZE: float = 44.0      # min. dokunma hedefi
 const EDGE_MARGIN: float = 16.0
 
@@ -23,6 +22,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_apply_style()
 	_position_button()
+	get_tree().root.size_changed.connect(_position_button)  # gameplay/core-loop-v4 V02 düzeltmesi (bkz. aşağı) -- diğer HUD parçalarıyla AYNI desen
 	pressed.connect(_on_pressed)
 	GameFlow.state_changed.connect(_on_state_changed)
 	visible = GameFlow.current_state == GameFlow.State.PLAYING
@@ -36,13 +36,23 @@ func _on_pressed() -> void:
 ## Sağ ALT köşe -- SafeArea kenar payının hemen içinde. HUD üst panel
 ## satırından (LeftPanel/NextPanel/ScorePanel) TAMAMEN AYRI bir bölgede
 ## olduğundan onların konum/boyutuna asla dokunmaz.
+##
+## DÜZELTME (2026-09-24, V02 vertical slice -- kullanıcı: "Pause düğmesini
+## HUD düzenine geri bağla"): KÖK NEDEN -- dikey konum SABİT KODLANMIŞ bir
+## LOGICAL_HEIGHT=1280 sabitine göre hesaplanıyordu; 720x1650 hedef
+## çözünürlükte (bkz. MAX_PLAY_HEIGHT notu, graybox_config.gd) bu, düğmeyi
+## gerçek ekran altından ~370px YUKARIDA, boş alanın ortasında "asılı" bırakıyordu.
+## Artık background_fill.gd/environment_bounds.gd ile AYNI desenle gerçek
+## viewport yüksekliği ÇALIŞMA ZAMANINDA okunur ve resize'da yeniden hesaplanır.
 func _position_button() -> void:
 	var margins: Dictionary = SafeArea.get_margins()
 	var right: float = max(float(margins.get("right", 16.0)), 12.0)
 	var bottom: float = float(margins.get("bottom", 0.0))
+	var logical_size: Vector2 = get_viewport().get_visible_rect().size
+	var logical_height: float = max(1280.0, logical_size.y)  # tasarım yüksekliğinin altına asla küçülme
 	position = Vector2(
 		LOGICAL_WIDTH - right - EDGE_MARGIN - BUTTON_SIZE,
-		LOGICAL_HEIGHT - bottom - EDGE_MARGIN - BUTTON_SIZE,
+		logical_height - bottom - EDGE_MARGIN - BUTTON_SIZE,
 	)
 
 func _apply_style() -> void:

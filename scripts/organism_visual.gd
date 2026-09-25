@@ -40,9 +40,18 @@ extends Polygon2D
 # renk = aynı tür = birleşir ilişkisi ilk bakışta net oluyor. Genel "soğuktan
 # sıcağa, sondan derin/asil bir tona" evrim hissi yine korunuyor.
 const STAGE_COLORS: Array[Color] = [
-	Color(0.20, 0.78, 0.72),  # 0 Tek Hücreli — turkuaz
-	Color(0.30, 0.75, 0.35),  # 1 Amip — yeşil
-	Color(0.75, 0.68, 0.15),  # 2 Solucan — hardal sarısı
+	Color(0.24, 0.72, 0.62),  # 0 Virüs — mint/teal (V02: "canlının laboratuvara aktarılması" ışık rengiyle uyumlu)
+	Color(0.55, 0.85, 0.70),  # 1 Bakteri — açık, yumuşak mint-yeşil (Virüs'ten belirgin ama aynı aile)
+	# 2: bu dilimde İKİ farklı anlamda kullanılır -- (a) LAB_VISUALS_ENABLED
+	# iken Tek Hücreli (bkz. LAB_TEK_HUCRELI_SHAPE, _ready dalı) rengi olarak,
+	# Virüs/Bakteri'yle AYNI mint-teal ailesinde ama belirgin şekilde daha
+	# koyu/mavi bir ton (kullanıcı: "eski fare benzeri asset olmamalı, V02'deki
+	# tasarımı kullan" -- eski hardal sarısı, sprite'a özgü olup bu aileye hiç
+	# uymuyordu); (b) bu dilimde erişilemeyen eski Solucan verisi (aşağıdaki
+	# STAGE_SHAPES[2]) için hâlâ "hardal sarısı" olarak yorumlanabilir ama o
+	# yol zaten hiç ÇAĞRILMIYOR (MAX_SPAWNABLE/VERTICAL_SLICE_FINAL_STAGE_ID
+	# sınırları dışında).
+	Color(0.16, 0.60, 0.70),  # 2 Tek Hücreli (lab) / eski Solucan (erişilemez)
 	Color(0.25, 0.55, 0.85),  # 3 Balık — gökyüzü mavisi
 	Color(0.90, 0.55, 0.15),  # 4 Kurbağa — turuncu
 	Color(0.80, 0.22, 0.22),  # 5 Kertenkele — kırmızı
@@ -201,6 +210,53 @@ const STAGE_TEXTURES: Dictionary = {
 const FISH_FRONT_TEXTURE: Texture2D = preload("res://assets/organisms/stage_03_fish_front.png")
 const FISH_BACK_TEXTURE: Texture2D = preload("res://assets/organisms/stage_03_fish_back.png")
 
+# DÜZELTME (2026-09-24, V02 vertical slice onay turu -- kullanıcı: "'Tek
+# Hücreli' eski fare benzeri asset OLMAMALI, V02'deki asimetrik/yarı saydam/
+# çekirdekli tasarımı kullan"): id=2 ARTIK bu sprite'ı KULLANMIYOR (aşağıdaki
+# LAB_TEK_HUCRELI_SHAPE ile aynı prosedürel "cell" ailesine geçti, bkz.
+# _ready dalı). Sabit ve preload SİLİNMEDİ -- STAGE_TEXTURES sözlüğünde id=0
+# hâlâ bu dosyayı kullanıyor (bu dilimde erişilemez ama üretim/gelecek
+# genişleme verisiyle uyumluluk için dokunulmadı) ve LAB_VISUALS_ENABLED=false
+# durumunda (eski graybox/üretim yolu) hiçbir şey değişmedi.
+const LAB_TEK_HUCRELI_TEXTURE: Texture2D = preload("res://assets/organisms/stage_00_cell.png")
+
+# DÜZELTME (2026-09-24, V02 onay turu): Tek Hücreli'nin YENİ prosedürel "cell"
+# şekli -- Virüs (3 çıkıntı, hafif asimetri) ve Bakteri'den (1 çıkıntı/kuyruk,
+# kapsül) GÖRSEL OLARAK daha KARMAŞIK/OLGUN okunsun diye (evrimsel ilerleme
+# hissi): daha fazla ve daha uzun çıkıntı (6 -- silia/kamçı kümesi hissi),
+# daha belirgin/çok sayıda yüzey kabartması, hafif daha az yassı bir gövde.
+# no_face:true (Virüs/Bakteri ile AYNI kural -- kullanıcı: "minimal/nötr,
+# maskot gibi olmasın"). Boyut STAGE_SHAPES/STAGE_COLORS'tan DEĞİL, doğrudan
+# GrayboxConfig.effective_radius(2)'ten (108-118px hedefiyle zaten örtüşen
+# 56px taban yarıçap) gelir -- TEK merkezi kaynak korunur.
+# DÜZELTME (V02 ikinci düzeltme turu -- kullanıcı: "Tek Hücreli: asimetrik
+# sitoplazma, belirgin çekirdek ve organel noktaları", ve üçünün "aynı
+# damlanın renk varyasyonu" gibi görünmemesi): x/y ölçeği artık BARİZ
+# ASİMETRİK (1.08/0.92 -- neredeyse Virüs'le özdeş -- yerine 1.20/0.82),
+# çekirdek BÜYÜK ve MERKEZ-DIŞI (nucleus_offset_ratio, Virüs'ün merkezdeki
+# küçük çekirdeğinden VE Bakteri'nin çekirdeksizliğinden bariz farklı), ve
+# 3 küçük "organel" noktası eklendi (çekirdekten ayrı, farklı boyut/alfa) --
+# bu üçü BİRLİKTE, renk hiç görülmese bile Tek Hücreli'yi diğer ikisinden
+# ayırt edilebilir kılar.
+const LAB_TEK_HUCRELI_SHAPE: Dictionary = {"body_type": "cell", "x_scale": 1.20, "y_scale": 0.82, "no_face": true,
+	"nucleus_offset_ratio": Vector2(-0.24, 0.20), "nucleus_radius_ratio": 0.34,
+	"organelles": [
+		{"offset_ratio": Vector2(0.32, -0.22), "radius_ratio": 0.10, "darken": 0.15},
+		{"offset_ratio": Vector2(0.12, 0.36), "radius_ratio": 0.07, "darken": 0.25},
+		{"offset_ratio": Vector2(-0.34, -0.30), "radius_ratio": 0.08, "darken": 0.05},
+	],
+	"bumps": [
+	{"angle": 0.5, "width": 0.7, "height": 0.20},
+	{"angle": 2.0, "width": 0.6, "height": 0.24},
+	{"angle": -1.6, "width": 0.55, "height": 0.16},
+	{"angle": -0.4, "width": 0.5, "height": 0.12},
+], "protrusions": [
+	{"angle": 0.2, "len": 0.36, "curve": 0.16},
+	{"angle": 1.1, "len": 0.40, "curve": -0.14},
+	{"angle": 1.9, "len": 0.30, "curve": 0.20},
+	{"angle": 2.8, "len": 0.34, "curve": -0.18},
+]}
+
 # Görsel cila (visual-polish/stage-readability): Stage 0-7 normal sprite
 # ölçeklemesi ÖNCEKİ (tuval genişliğine göre) haliyle korunuyor -- bkz.
 # _add_scaled_sprite. Yalnızca Balık ön/arka parçaları, okunabilirlik
@@ -243,16 +299,47 @@ const BONUS_HALO_RING_LAYERS: Array[Dictionary] = [
 # eye_style: "bulge" ise gözler _add_bulging_eyes ile çizilir.
 # Açı 0=sağ, PI/2=aşağı, PI=sol, -PI/2=yukarı.
 const STAGE_SHAPES: Array[Dictionary] = [
-	# 0 Tek Hücreli — yarı saydam, çekirdekli, hafif dalgalanan hücre
-	{"body_type": "cell", "x_scale": 1.0, "y_scale": 1.0, "face_angle": -PI / 2.0, "bumps": [
-		{"angle": 0.6, "width": 0.9, "height": 0.08},
-		{"angle": 2.6, "width": 0.9, "height": 0.08},
-	]},
-	# 1 Amip — belirgin, sürekli şekil değiştiren "yalancı ayak" çıkıntıları
-	{"body_type": "cell", "x_scale": 1.0, "y_scale": 1.0, "face_angle": -PI / 2.0, "bumps": [
-		{"angle": 0.3, "width": 0.8, "height": 0.2},
+	# 0 Virüs — gameplay/core-loop-v4 "Evrim Laboratuvarı" V02 tasarımı:
+	# asimetrik, yarı saydam gövde + görülebilir bir iç çekirdek + ince,
+	# yuvarlak uçlu çıkıntılar (spikes DEĞİL) + YÜZ YOK (kullanıcı: "minimal/
+	# nötr yüz, okul öncesi maskot gibi görünmemeli"). "cell" gövde-tipini
+	# (yarı saydamlık/çekirdek/dalgalanma) paylaşır ama no_face:true ile
+	# _add_face çağrısı atlanır, protrusions ile ayrı ince Line2D çıkıntılar
+	# eklenir (bkz. _ready dalı, _add_thin_protrusions).
+	# DÜZELTME (V02 ikinci düzeltme turu -- kullanıcı: "Virüs: küçük kapsül/
+	# zar ve belirgin çıkıntılar", ve üç aşamanın "aynı damlanın renk
+	# varyasyonu" gibi görünmemesi): çekirdek artık KÜÇÜK ve TAM MERKEZDE
+	# (viral kapsid çekirdeği hissi -- nucleus_offset_ratio=ZERO,
+	# nucleus_radius_ratio küçük) -- Bakteri'nin (çekirdeksiz) ve Tek
+	# Hücreli'nin (büyük, MERKEZ-DIŞI) çekirdeğinden bariz farklı. Çıkıntılar
+	# düşük "curve" ile DAHA DÜZ/sert -- gerçek diken (spike) hissi, Tek
+	# Hücreli'nin kıvrık/organik çıkıntılarından ayrışsın diye.
+	{"body_type": "cell", "x_scale": 1.0, "y_scale": 0.96, "no_face": true,
+		"nucleus_offset_ratio": Vector2(0.0, 0.0), "nucleus_radius_ratio": 0.16,
+		"bumps": [
+		{"angle": 0.3, "width": 0.8, "height": 0.22},
 		{"angle": 2.2, "width": 0.7, "height": 0.16},
 		{"angle": -1.8, "width": 0.6, "height": 0.14},
+	], "protrusions": [
+		{"angle": 0.9, "len": 0.36, "curve": 0.04},
+		{"angle": 2.6, "len": 0.32, "curve": -0.03},
+		{"angle": -2.4, "len": 0.30, "curve": 0.05},
+		{"angle": -1.1, "len": 0.34, "curve": -0.04},
+		{"angle": 0.05, "len": 0.26, "curve": 0.03},
+	]},
+	# 1 Bakteri — hafif asimetrik kapsül/fasulye gövde + ince bir "flagella"
+	# kuyruk + YÜZ YOK. DÜZELTME (V02 ikinci düzeltme turu): ÇEKİRDEKSİZ
+	# bırakıldı (no_nucleus=true) -- prokaryot bir hücrenin gerçek çekirdeği
+	# yoktur, ve bu Bakteri'yi Virüs'ün (küçük merkez çekirdek) ve Tek
+	# Hücreli'nin (büyük merkez-dışı çekirdek) yanında ÜÇÜNCÜ, bariz şekilde
+	# farklı bir siluet yapar -- yalnızca uzun kapsül gövde + tek kamçı kuyruk.
+	{"body_type": "cell", "x_scale": 1.28, "y_scale": 0.8, "no_face": true, "no_nucleus": true,
+		"bumps": [
+		{"angle": 0.4, "width": 0.7, "height": 0.1},
+		{"angle": -2.6, "width": 0.6, "height": 0.07},
+	], "protrusions": [
+		{"angle": 0.15, "len": 0.42, "curve": 0.06},
+		{"angle": -3.0, "len": 0.14, "curve": -0.03},
 	]},
 	# 2 Solucan (kullanıcı bulgusu — şekil düzeltmesi): eski tail/head_width_ratio
 	# (0.8/0.95) length_ratio'ya (3.2) göre çok genişti, bu da solucanı kısa/tombul
@@ -376,7 +463,13 @@ func _ready() -> void:
 	# büyümeye başlasın"): tier > 0 ise (bkz. organism.gd/organism_types.gd
 	# TIERED_GROWTH_STAGE_ID notu) görsel boyut da fiziksel gövdeyle birebir
 	# aynı oranda büyür — ikisi hep OrganismTypes'taki TEK bir çarpandan gelir.
-	var radius: float = stage.get("radius", 16.0) * OrganismTypes.tier_size_multiplier(stage_id, tier)
+	# DÜZELTME (kullanıcı: "görsel-collision uyumu"): TEK, merkezi
+	# GrayboxConfig.effective_radius() kaynağından okunur -- organism.gd
+	# _apply_stage() ile BİREBİR AYNI fonksiyon/formül (ENABLED=false iken
+	# eski "stage.radius * tier_size_multiplier" ile sayısal olarak özdeş,
+	# üretim davranışı değişmez; ENABLED iken collision shape'le TAM aynı
+	# büyütülmüş yarıçap -- artık görsel boyut collision'dan asla sapmaz).
+	var radius: float = GrayboxConfig.effective_radius(stage_id, tier)
 	var is_bonus: bool = bool(organism.get("is_bonus"))
 	var is_fish_part: bool = bool(organism.get("is_fish_part")) and stage_id == FISH_STAGE_ID
 	var cfg: Dictionary = STAGE_SHAPES[stage_id % STAGE_SHAPES.size()]
@@ -387,7 +480,52 @@ func _ready() -> void:
 		# Bonus Sistemi: normal canlılardan ayırt edilsin diye altın rengine çekilir.
 		base_color = base_color.lerp(BONUS_TINT_COLOR, BONUS_TINT_STRENGTH)
 
-	if is_fish_part:
+	if GrayboxConfig.ENABLED and GrayboxConfig.LAB_VISUALS_ENABLED and stage_id <= OrganismTypes.VERTICAL_SLICE_FINAL_STAGE_ID and not is_fish_part:
+		# gameplay/core-loop-v4 "Evrim Laboratuvarı" V02 vertical slice: id
+		# 0/1/2 (Virüs/Bakteri/Tek Hücreli) artık eski düz-renkli graybox
+		# dairesi YERİNE gerçek "lab" görselini kullanır (bkz. _ready dalı
+		# altındaki "cell"/sprite kolları, no_face/protrusions cfg alanları).
+		# Bu dal, diğer stage_id'ler (bu dilimde erişilemez) ve balık parçaları
+		# için eski graybox/sprite/prosedürel yollara HİÇ dokunmaz.
+		# DÜZELTME (2026-09-24, V02 onay turu -- kullanıcı: "Tek Hücreli eski
+		# fare benzeri asset OLMAMALI"): id=2 ARTIK stage_00_cell.png sprite'ını
+		# KULLANMIYOR -- Virüs/Bakteri ile AYNI prosedürel "cell" çizim yolunu,
+		# kendi (LAB_TEK_HUCRELI_SHAPE) şekil/çıkıntı yapılandırmasıyla
+		# paylaşır (görsel-collision uyumu KORUNUR: radius hâlâ TEK merkezi
+		# GrayboxConfig.effective_radius(2) kaynağından).
+		var lab_cfg: Dictionary = LAB_TEK_HUCRELI_SHAPE if stage_id == OrganismTypes.VERTICAL_SLICE_FINAL_STAGE_ID else cfg
+		_cell_cfg = lab_cfg
+		_cell_radius = radius
+		_cell_wobble_time = randf() * TAU
+		var alpha: float = float(lab_cfg.get("alpha", CELL_ALPHA))
+		polygon = _build_shape(lab_cfg, radius)
+		color = Color(base_color.r, base_color.g, base_color.b, alpha)
+		_outline = _add_outline(base_color)
+		# DÜZELTME (V02 İKİNCİ düzeltme turu -- madde 3: "Virüs, Bakteri ve Tek
+		# Hücreli aynı damlanın renk varyasyonu olmamalı ... Silüetleri, yalnızca
+		# renklerine bakmadan ayırt edilebilmeli"): bu SATIR asıl lab-mode çizim
+		# yoludur (yukarıdaki `if` dalı) -- STAGE_SHAPES/LAB_TEK_HUCRELI_SHAPE'e
+		# eklenen nucleus_offset_ratio/nucleus_radius_ratio/no_nucleus/organelles
+		# alanları eskiden SADECE match body_type=="cell" dalına (aşağıda, bu
+		# dilimde hiç ÇALIŞMAYAN bir kod yoluna) yazılmıştı -- görsel HİÇBİR
+		# etkisi olmuyordu (kök neden). Artık lab_cfg BURADA, gerçekten
+		# render edilen yolda okunuyor.
+		if not bool(lab_cfg.get("no_nucleus", false)):
+			_add_nucleus(radius, base_color, lab_cfg)
+		for organelle in lab_cfg.get("organelles", []):
+			_add_organelle_dot(organelle, radius, base_color)
+		if not bool(lab_cfg.get("no_face", false)):
+			_add_face(lab_cfg, radius)
+		for protrusion in lab_cfg.get("protrusions", []):
+			_add_thin_protrusion(protrusion, radius, base_color)
+	elif GrayboxConfig.ENABLED:
+		# V4 core-loop/graybox (madde 4): gerçek sanat (STAGE_TEXTURES/
+		# prosedürel gövde çizimi) yoluna HİÇ DOKUNMADAN, düz renkli basit bir
+		# graybox şekli çizer. Balık parçaları için de AYNI yol kullanılır --
+		# collision/merge/complementary-index mantığı bundan ETKİLENMEZ,
+		# sadece görsel temsil basitleşir.
+		_build_graybox_visual(stage_id, radius, is_bonus)
+	elif is_fish_part:
 		# Faz 2: Balik'in PARCALARI da artik gercek sanat (on/arka PNG) kullanir --
 		# eski prosedurel _build_fish_part hala asagida duruyor (kullanilmiyor,
 		# geri donus/referans icin), fish_part_index 0=on (front), 1=arka (back).
@@ -418,7 +556,16 @@ func _ready() -> void:
 				polygon = _build_shape(cfg, radius)
 				color = Color(base_color.r, base_color.g, base_color.b, CELL_ALPHA)
 				_outline = _add_outline(base_color)  # kontur tam opak kalsın, saydam dolgudan net ayrılsın
-				_add_nucleus(radius, base_color)
+				# NOT: bu dal (match body_type=="cell") yalnızca lab-mode DIŞI
+				# (üretim, ENABLED=false) durumlarda çalışır -- yukarıdaki `lab_cfg`
+				# (LAB_VISUALS_ENABLED dalına özel, farklı bir blok kapsamı) BURADA
+				# ERİŞİLEMEZ; bu yüzden AYNI cfg-tabanlı çekirdek/organel mantığı
+				# burada fonksiyon kapsamındaki `cfg`yi okur (GDScript 2.0 blok
+				# kapsamı -- `if` içinde tanımlanan `var` yalnızca o bloğa özeldir).
+				if not bool(cfg.get("no_nucleus", false)):
+					_add_nucleus(radius, base_color, cfg)
+				for organelle in cfg.get("organelles", []):
+					_add_organelle_dot(organelle, radius, base_color)
 				_add_face(cfg, radius)
 			"critter":
 				polygon = _build_critter_body_shape(cfg, radius)
@@ -439,10 +586,43 @@ func _ready() -> void:
 				_outline = _add_outline(base_color)
 				_add_face(cfg, radius)
 
-	if is_bonus:
+	# V4 core-loop/graybox (madde 6 -- geri bildirim sadeleştirme): kullanıcı
+	# bulgusu ("sürekli sarı hale kafa karıştırıcı") -- graybox modunda bu
+	# SÜREKLİ nabız atan halo hiç eklenmez. Bonus renk tint'i (base_color
+	# BONUS_TINT_COLOR'a çekilmesi, yukarıda zaten uygulandı) ve merge anındaki
+	# kısa (~0.58s, merge_burst.gd) flaş KORUNUR -- yalnızca bu SONSUZ döngülü
+	# halo/pulse kaldırılır. Üretimde (ENABLED=false) davranış DEĞİŞMEZ.
+	var suppress_halo: bool = GrayboxConfig.ENABLED and GrayboxConfig.SUPPRESS_PERSISTENT_BONUS_HALO
+	if is_bonus and not suppress_halo:
 		_add_bonus_halo(radius)
 
-	_play_spawn_pop(is_bonus)
+	# gameplay/core-loop-v4 "Evrim Laboratuvarı" vertical slice: evrimle
+	# (merge SONUCU) doğan canlılar -- organism.gd _perform_merge'de
+	# add_child'dan ÖNCE set edilen born_from_evolution -- kullanıcı talebi
+	# ("yeni canlı %115-125 ölçeğe kısa süre çıksın") uyarınca sıradan drop
+	# pop-in'inden (Vector2.ONE'a TRANS_BACK overshoot, ~%10) AYRI, belirgin
+	# bir tepe-sonra-otur animasyonu alır (bkz. _play_spawn_pop).
+	_play_spawn_pop(is_bonus and not suppress_halo, bool(organism.get("born_from_evolution")))
+
+## V4 core-loop/graybox (madde 4 -- graybox görsel boyutlandırma): gerçek
+## sanata veya prosedürel gövde çizimine HİÇ dokunmadan, tek renkli basit bir
+## daire çizer. DÜZELTME (kullanıcı: "görsel-collision uyumu"): `radius`
+## parametresi artık zaten yukarıdaki _ready()'de GrayboxConfig.effective_radius()
+## ile hesaplanmış, organism.gd _apply_stage()'in collision shape'i için
+## kullandığı TAM AYNI (büyütülmüş) değerdir -- burada AYRICA bir görsel
+## çarpan uygulanmaz (önceki sürümde büyütme SADECE burada yapılıyordu,
+## collision hâlâ küçük kalıyordu; artık büyütme tek kaynakta, yukarıda). Bonus
+## canlılar için renk BONUS_TINT_COLOR'a doğru çekilir (üretimdeki tint
+## davranışıyla tutarlı) -- sürekli nabız halosu ayrı olarak
+## SUPPRESS_PERSISTENT_BONUS_HALO ile _add_bonus_halo/_play_bonus_pulse
+## içinde ele alınır.
+func _build_graybox_visual(stage_id: int, radius: float, is_bonus: bool) -> void:
+	var base_color: Color = GrayboxConfig.STAGE_COLORS.get(stage_id, Color.WHITE)
+	if is_bonus:
+		base_color = base_color.lerp(BONUS_TINT_COLOR, BONUS_TINT_STRENGTH)
+	polygon = _circle_points(radius, 40)
+	color = base_color
+	_outline = _add_outline(base_color)
 
 ## Cowork uygulama talimati: gercek sanat eseri (PNG) olan bir asama icin
 ## prosedurel cizimin YERINE, merkezlenmis tek bir Sprite2D ekler. Sprite'in
@@ -526,14 +706,38 @@ func _add_outline(body_color: Color) -> Line2D:
 
 ## "cell" gövdesine gerçek bir hücre çekirdeği gibi merkezden hafif kaymış,
 ## koyu tonlu bir iç daire ekler.
-func _add_nucleus(radius: float, body_color: Color) -> void:
+## DÜZELTME (V02 ikinci düzeltme turu -- "aynı damlanın renk varyasyonu
+## olmamalı"): çekirdek konumu/boyutu artık SABİT değil, isteğe bağlı
+## `cfg` ("nucleus_offset_ratio": Vector2, "nucleus_radius_ratio": float)
+## üzerinden özelleştirilebilir -- cfg boş/alan yoksa ESKİ sabit değerler
+## (radius*0.18,-radius*0.12 / CELL_NUCLEUS_RADIUS_RATIO) AYNEN korunur, bu
+## yüzden mevcut çağrı yerleri (varsayılan cfg={}) davranışça DEĞİŞMEZ.
+func _add_nucleus(radius: float, body_color: Color, cfg: Dictionary = {}) -> void:
 	var nucleus := Polygon2D.new()
-	var nucleus_radius: float = radius * CELL_NUCLEUS_RADIUS_RATIO
+	var radius_ratio: float = float(cfg.get("nucleus_radius_ratio", CELL_NUCLEUS_RADIUS_RATIO))
+	var nucleus_radius: float = radius * radius_ratio
 	nucleus.polygon = _circle_points(nucleus_radius)
 	var nucleus_color: Color = body_color.darkened(CELL_NUCLEUS_COLOR_DARKEN)
 	nucleus.color = nucleus_color
-	nucleus.position = Vector2(radius * 0.18, -radius * 0.12)
+	var offset_ratio: Vector2 = cfg.get("nucleus_offset_ratio", Vector2(0.18, -0.12))
+	nucleus.position = Vector2(radius * offset_ratio.x, radius * offset_ratio.y)
 	add_child(nucleus)
+
+## DÜZELTME (V02 ikinci düzeltme turu -- "Tek Hücreli: ... belirgin çekirdek
+## ve organel noktaları"): çekirdekten AYRI, daha küçük, dağınık noktalar --
+## ökaryot bir hücrenin organelleri hissi. SADECE cfg'sinde "organelles"
+## dizisi tanımlı aşamalarda (şu an yalnızca Tek Hücreli) çizilir; Virüs/
+## Bakteri bu diziyi tanımlamadığından hiçbir görsel/davranış değişikliği
+## YOK onlarda.
+func _add_organelle_dot(organelle: Dictionary, radius: float, body_color: Color) -> void:
+	var offset_ratio: Vector2 = organelle.get("offset_ratio", Vector2.ZERO)
+	var dot_radius_ratio: float = float(organelle.get("radius_ratio", 0.09))
+	var darken: float = float(organelle.get("darken", 0.3))
+	var dot := Polygon2D.new()
+	dot.polygon = _circle_points(radius * dot_radius_ratio)
+	dot.color = body_color.darkened(darken)
+	dot.position = Vector2(radius * offset_ratio.x, radius * offset_ratio.y)
+	add_child(dot)
 
 ## "blob" ve "cell" gövdeleri için STAGE_SHAPES'teki face_angle yönünde, gövde
 ## yüzeyinin biraz içine çekilmiş iki basit "tatlı" göz (beyaz + göz bebeği) ekler.
@@ -636,6 +840,37 @@ func _add_segment_accessory(cfg: Dictionary, radius: float, body_color: Color) -
 			fork.default_color = TONGUE_COLOR
 			fork.z_index = 1
 			add_child(fork)
+
+## gameplay/core-loop-v4 "Evrim Laboratuvarı" V02 vertical slice (Virüs):
+## kullanıcı talebi -- "ince dış çıkıntılar (körelmiş dikenler DEĞİL)". Eski
+## "critter" wedge'leri (düz/yuvarlatılmış üçgen, gövdeyle aynı opak renk)
+## yerine, gövde yüzeyinden dışa doğru hafifçe kıvrılan İNCE bir Line2D +
+## ucunda küçük, daha açık tonlu bir daire ("yuvarlak uçlu") -- _add_segment_
+## accessory'nin anten tekniğiyle aynı ailede, ama kavisli (quad-bezier).
+func _add_thin_protrusion(protrusion: Dictionary, radius: float, body_color: Color) -> void:
+	var angle: float = float(protrusion.get("angle", 0.0))
+	var length_ratio: float = float(protrusion.get("len", 0.3))
+	var curve_ratio: float = float(protrusion.get("curve", 0.1))
+	var dir_vec: Vector2 = Vector2(cos(angle), sin(angle))
+	var base: Vector2 = dir_vec * radius * 0.94
+	var tip: Vector2 = base + dir_vec * radius * length_ratio
+	var perp: Vector2 = Vector2(-dir_vec.y, dir_vec.x)
+	var control: Vector2 = base.lerp(tip, 0.5) + perp * radius * curve_ratio
+	var line := Line2D.new()
+	line.points = _quad_bezier_points(base, control, tip, 8)
+	line.width = max(radius * 0.045, 1.4)
+	line.default_color = body_color.darkened(0.12)
+	line.joint_mode = Line2D.LINE_JOINT_ROUND
+	line.begin_cap_mode = Line2D.LINE_CAP_ROUND
+	line.end_cap_mode = Line2D.LINE_CAP_ROUND
+	line.z_index = -1
+	add_child(line)
+	var tip_dot := Polygon2D.new()
+	tip_dot.polygon = _circle_points(max(radius * 0.055, 1.6))
+	tip_dot.color = body_color.lightened(0.3)
+	tip_dot.position = line.points[line.points.size() - 1]
+	tip_dot.z_index = -1
+	add_child(tip_dot)
 
 ## Tek bir göz (beyaz taban + hafifçe kaydırılmış göz bebeği + iki küçük
 ## parıltı) oluşturup verilen konuma ekler. Onüçüncü geri bildirim ("çok
@@ -978,12 +1213,23 @@ func _add_bonus_halo(radius: float) -> void:
 ## "patlar gibi" beliren kısa bir hareket katar. Sadece görseldir; çarpışma
 ## yarıçapını (Coder'ın ayarladığı CircleShape2D) etkilemez. Bonus canlıysa
 ## pop-in bitince sürekli nabız animasyonuna geçer (bkz. _play_bonus_pulse).
-func _play_spawn_pop(start_bonus_pulse: bool = false) -> void:
+func _play_spawn_pop(start_bonus_pulse: bool = false, born_from_evolution: bool = false) -> void:
 	scale = Vector2(0.35, 0.35)
 	var tween: Tween = create_tween()
-	tween.set_trans(Tween.TRANS_BACK)
-	tween.set_ease(Tween.EASE_OUT)
-	tween.tween_property(self, "scale", Vector2.ONE, 0.28)
+	if born_from_evolution:
+		# gameplay/core-loop-v4 "Evrim Laboratuvarı" vertical slice -- kullanıcı
+		# talebi: "yeni canlı %115-125 ölçeğe kısa süre çıksın" (EVOLUTION_POP_
+		# SCALE), sonra normal boyuta otursun -- toplam süre EVOLUTION_TRANSFORM_
+		# DURATION ile aynı ailede (bkz. evolution_burst.gd, aynı anda oynar).
+		var peak: float = GrayboxConfig.EVOLUTION_POP_SCALE
+		var total: float = GrayboxConfig.EVOLUTION_TRANSFORM_DURATION
+		tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tween.tween_property(self, "scale", Vector2(peak, peak), total * 0.55)
+		tween.tween_property(self, "scale", Vector2.ONE, total * 0.45).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	else:
+		tween.set_trans(Tween.TRANS_BACK)
+		tween.set_ease(Tween.EASE_OUT)
+		tween.tween_property(self, "scale", Vector2.ONE, 0.28)
 	if start_bonus_pulse:
 		tween.tween_callback(_play_bonus_pulse)
 

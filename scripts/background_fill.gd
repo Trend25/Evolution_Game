@@ -17,7 +17,19 @@ class_name BackgroundFill
 
 const DESIGN_SIZE: Vector2 = Vector2(720.0, 1280.0)
 
+## DÜZELTME (V02 düzeltme turu -- kullanıcı: "Açık mavi jenerik arka plan
+## yerine V02 biyoreaktör atmosferini kullan: koyu laboratuvar tonu ..."):
+## bu Sprite2D, üretimden kalma AÇIK/PARLAK camgöbeği bir çerçeve dokusu
+## gösteriyordu ve BioreactorAmbience'ın (koyu fon varsayarak ayarlanmış
+## silik duvar/parçacık katmanları) tamamen "yıkanmasına" sebep oluyordu.
+## Lab modunda (GrayboxConfig.ENABLED and LAB_VISUALS_ENABLED) bu parlak
+## dokuyu TAMAMEN gizleyip yerini background_visual.gd'nin ZATEN var olan
+## koyu "evrim temalı" Polygon2D katmanına bırakır -- üretim/graybox=false
+## davranışı BİREBİR aynı kalır (bu script'in geri kalanı değişmedi).
 func _ready() -> void:
+	if GrayboxConfig.ENABLED and GrayboxConfig.LAB_VISUALS_ENABLED:
+		visible = false
+		return
 	centered = true
 	_update_fill()
 	get_tree().root.size_changed.connect(_update_fill)

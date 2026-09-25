@@ -52,10 +52,26 @@ extends Node
 # ödül sistemi, UC-05) bu değişikliğin kapsamı dışında bırakıldı, eski
 # xp_value'lar AYNEN korundu (xp_value hâlâ ÖN-birleşme stage_id'sinden
 # doğrudan okunur, score_value'nun aksine KAYDIRILMAZ).
+# -----------------------------------------------------------------------------
+# gameplay/core-loop-v4 "Evrim Laboratuvarı" vertical slice (2026-09-24):
+# kullanıcı V02 tasarımını koşullu onayladıktan sonra, YALNIZCA ilk üç aşamayı
+# (0 Virüs, 1 Bakteri, 2 Tek Hücreli) oynanabilir kılan dar kapsamlı bir dilim
+# istendi -- 10 aşamalı zincirin TAMAMI, APK, commit/push bu görevin kapsamı
+# DIŞINDA bırakıldı (kullanıcının açık talimatı).
+#
+# Bu yüzden id 0/1/2'nin İSMİ ve radius'u (V02 mockup'ındaki hedef 720px ekran
+# çapları: Virüs 70-76px, Bakteri 88-96px, Tek Hücreli 108-118px -- radius =
+# çap/2) burada değiştirildi; id 3-9 (eski Balık..T-Rex verisi) BİLEREK
+# DOKUNULMADAN bırakıldı -- bu dilimde asla üretilmez/erişilmez (bkz. aşağı
+# MAX_SPAWNABLE_STAGE_ID=0 ve VERTICAL_SLICE_FINAL_STAGE_ID), ileride zincirin
+# geri kalanı genişletilmek istenirse veri hâlâ burada durur, hiçbir şey
+# silinmedi. graybox_config.gd VISUAL_SCALE_BY_STAGE[0..2] de 1.0'a çekildi ki
+# effective_radius() burada verilen radius'u ADDITIONAL bir çarpan olmadan
+# birebir döndürsün (bkz. o dosyadaki not).
 const STAGES: Array[Dictionary] = [
-	{"id": 0, "name": "Tek Hücreli", "radius": 25.0, "score_value": 0, "xp_value": 1},
-	{"id": 1, "name": "Amip", "radius": 31.0, "score_value": 20, "xp_value": 2},
-	{"id": 2, "name": "Solucan", "radius": 38.0, "score_value": 40, "xp_value": 4},
+	{"id": 0, "name": "Virüs", "radius": 37.0, "score_value": 0, "xp_value": 1},
+	{"id": 1, "name": "Bakteri", "radius": 46.0, "score_value": 20, "xp_value": 2},
+	{"id": 2, "name": "Tek Hücreli", "radius": 56.0, "score_value": 40, "xp_value": 4},
 	{"id": 3, "name": "Balık", "radius": 46.0, "score_value": 70, "xp_value": 8},
 	{"id": 4, "name": "Kurbağa", "radius": 60.0, "score_value": 110, "xp_value": 16},
 	{"id": 5, "name": "Kertenkele", "radius": 76.0, "score_value": 170, "xp_value": 32},
@@ -65,7 +81,17 @@ const STAGES: Array[Dictionary] = [
 	{"id": 9, "name": "Dinozor (T-Rex)", "radius": 166.0, "score_value": 1000, "xp_value": 512},
 ]
 
-const MAX_SPAWNABLE_STAGE_ID: int = 4  # UC-01: Spawner yalnızca ilk aşamaları üretir; T-Rex elle bırakılmaz.
+# Vertical slice: portaldan SADECE Virüs (id 0) düşer -- Bakteri/Tek Hücreli
+# yalnızca birleşmeyle ortaya çıkar (bkz. spawner.gd _prepare_next_organism).
+# Eskiden 4 idi (Tek Hücreli..Kurbağa arası rastgele) -- V02 mockup'larının
+# HİÇBİRİNDE portaldan Bakteri/Tek Hücreli düşmüyor, hepsi Virüs.
+const MAX_SPAWNABLE_STAGE_ID: int = 0  # UC-01: Spawner yalnızca ilk aşamaları üretir; T-Rex elle bırakılmaz.
+
+# Vertical slice: iki Tek Hücreli (id 2) birleşince bir üst aşamaya EVRİLMEZ --
+# zincirin geri kalanı bu görevin kapsamı dışında bırakıldığından, T-Rex'in
+# (id 9) "son aşama, sadece ödül verilir" davranışıyla AYNI desenle burada da
+# evrim durur (bkz. organism.gd _perform_merge). Skor/XP ödülü YİNE verilir.
+const VERTICAL_SLICE_FINAL_STAGE_ID: int = 2
 
 ## Verilen aşama id'sinin bir üst evrim aşamasını döndürür; son aşamadaysa boş Dictionary döner.
 func get_next_stage(stage_id: int) -> Dictionary:
@@ -91,7 +117,13 @@ func get_random_spawnable_stage_id() -> int:
 # _should_grow_instead_of_evolve/_perform_merge). Bu tablo hem organism.gd
 # (fiziksel boyut/merge kararı) hem organism_visual.gd (görsel boyut)
 # tarafından paylaşılır ki ikisi asla birbirinden sapmasın.
-const TIERED_GROWTH_STAGE_ID: int = 2      # Solucan
+# Vertical slice: Solucan (eski id 2) zincirden tamamen çıkarıldı (kullanıcı
+# talimatı, V02 tasarımı) -- id 2 artık Tek Hücreli ve bu tiered-growth
+# tuhaflığına SAHİP DEĞİL. -1 hiçbir stage_id'ye eşleşmediğinden
+# tier_size_multiplier() her zaman 1.0, _should_grow_instead_of_evolve() her
+# zaman false döner -- mekanik KOD OLARAK silinmedi (ileride başka bir aşamaya
+# yeniden bağlanabilir), sadece bu dilimde devre dışı.
+const TIERED_GROWTH_STAGE_ID: int = -1      # eskiden 2 (Solucan) idi
 const TIER_SIZE_SCALE_STEP: float = 0.35   # tier 1: %35 daha büyük fiziksel/görsel boyut
 
 ## Verilen aşama+tier için fiziksel/görsel boyut çarpanını döndürür. Diğer

@@ -26,11 +26,34 @@ const COLOR_TWEEN_DURATION: float = 1.2  # Seviye atlayınca yeni tona kayış s
 
 var _current_theme: Dictionary = {}
 
+## DÜZELTME (V02 düzeltme turu -- kullanıcı: "... koyu laboratuvar tonu ...
+## kullan"): bu katman önceden `visible=false` idi (BackgroundImage'ın
+## parlak dokusu tercih ediliyordu). Lab modunda artık AÇILIR -- zaten var
+## olan koyu "evrim temalı" palet (THEMES) hiçbir yeni renk icat etmeden
+## "koyu laboratuvar tonu" isteğini karşılıyor. Üretim/graybox=false
+## davranışı (visible=false, eski sabit hardcoded polygon) DEĞİŞMEDİ.
 func _ready() -> void:
 	GameManager.level_changed.connect(_on_level_changed)
 	GameManager.run_reset.connect(_on_run_reset)
 	_pick_random_theme()
 	_apply_color_for_level(GameManager.level, false)
+	if GrayboxConfig.ENABLED and GrayboxConfig.LAB_VISUALS_ENABLED:
+		visible = true
+		_update_polygon_size()
+		get_tree().root.size_changed.connect(_update_polygon_size)
+
+## background_fill.gd'nin BackgroundImage için yaptığı ile AYNI mantık --
+## logic sadece polygon köşe noktalarını günceller (Sprite2D'nin scale'i
+## yerine Polygon2D doğrudan kendi polygon dizisini büyütür), her zaman
+## açığa çıkan TÜM mantıksal alanı kaplar, tasarım boyutunun (720x1280)
+## altına asla küçülmez.
+func _update_polygon_size() -> void:
+	var logical_size: Vector2 = get_viewport().get_visible_rect().size
+	if logical_size.x <= 0.0 or logical_size.y <= 0.0:
+		return
+	var w: float = max(720.0, logical_size.x)
+	var h: float = max(1280.0, logical_size.y)
+	polygon = PackedVector2Array([Vector2(0.0, 0.0), Vector2(w, 0.0), Vector2(w, h), Vector2(0.0, h)])
 
 ## GameManager.run_reset ("Tekrar Oyna"): yeni bir tema zarlanır ve mevcut
 ## seviyeye göre (level SIFIRLANMAZ — bkz. game_manager.gd reset_run notu)
@@ -44,8 +67,18 @@ func _on_level_changed(new_level: int) -> void:
 
 ## Mevcut temadan FARKLI rastgele bir tane seçer (art arda aynı tema
 ## gelmesin diye) — tek tema tanımlıysa olduğu gibi kalır.
+## DÜZELTME (V02 düzeltme turu -- gerçek GL ekran görüntüsü incelemesinde
+## BULUNDU): bu katman lab modunda AÇILMADAN önce hangi tema seçildiği hiç
+## önemli değildi (görünmezdi). Artık görünür olduğundan, RASTGELE bir tema
+## (ör. "Volkanik Çamur" -- koyu KIRMIZI/kahve) BioreactorAmbience'ın SABİT
+## teal/mint duvar-jel paletiyle (bkz. bioreactor_ambience.gd WALL_COLOR/
+## GEL_*_COLOR) çelişip tutarsız/"yanlış" bir görünüme yol açabiliyordu.
+## Lab modunda bu yüzden HER ZAMAN "İlkel Okyanus" (zaten teal/mint aile,
+## bkz. THEMES[0]) seçilir -- kullanıcının onayladığı V02 biyoreaktör rengiyle
+## tutarlı, öngörülebilir bir görünüm. Üretim/graybox=false davranışı
+## (rastgele tema rotasyonu) DEĞİŞMEDİ.
 func _pick_random_theme() -> void:
-	if THEMES.size() <= 1:
+	if (GrayboxConfig.ENABLED and GrayboxConfig.LAB_VISUALS_ENABLED) or THEMES.size() <= 1:
 		_current_theme = THEMES[0]
 		return
 	var candidate: Dictionary = THEMES[randi() % THEMES.size()]
