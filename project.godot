@@ -26,6 +26,7 @@ GameManager="*res://scripts/game_manager.gd"
 GameFlow="*res://scripts/game_flow.gd"
 AudioManager="*res://scripts/audio_manager.gd"
 GameplayWatchdog="*res://scripts/gameplay_watchdog.gd"
+GrayboxConfig="*res://scripts/graybox_config.gd"
 
 [display]
 
